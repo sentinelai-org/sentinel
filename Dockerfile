@@ -11,6 +11,7 @@ WORKDIR /app
 # Install Python dependencies first for optimal Docker layer caching
 COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir .
 
 # Copy application source code and scripts

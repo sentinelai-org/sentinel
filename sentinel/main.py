@@ -75,15 +75,22 @@ def build_app(
         # 4. LLM Providers & Router
         if override_primary_llm is not None:
             primary_llm = override_primary_llm
-        elif current_settings.gemini_api_key:
+        elif (
+            current_settings.gemini_api_key
+            and current_settings.gemini_api_key != "your_gemini_api_key_here"
+        ):
             primary_llm = GeminiProvider(
                 api_key=current_settings.gemini_api_key,
                 model=current_settings.gemini_model,
             )
         else:
-            logger.warning("GEMINI_API_KEY not set; using FakeProvider as primary")
+            logger.warning("GEMINI_API_KEY not set or placeholder; using FakeProvider as primary")
             primary_llm = FakeProvider(
-                default_response="Simulated Sentinel response (GEMINI_API_KEY was not configured).",
+                default_response=(
+                    "Based on Kubernetes documentation, Deployments manage rolling updates "
+                    "declaratively using the RollingUpdate strategy by controlling maxSurge and "
+                    "maxUnavailable to guarantee zero downtime."
+                ),
                 provider_name="fake-gemini",
                 model=current_settings.gemini_model,
             )
