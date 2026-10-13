@@ -1,0 +1,18 @@
+"""LangGraph explicit state object definition."""
+
+from __future__ import annotations
+
+from typing import Any, TypedDict
+
+
+class AgentState(TypedDict):
+    """Explicit state passed across nodes in the LangGraph workflow."""
+
+    question: str
+    session_id: str | None
+    request_id: str
+    documents: list[dict[str, Any]]
+    context_relevant: bool
+    answer: str
+    sources: list[dict[str, Any]]
+    meta: dict[str, Any]
