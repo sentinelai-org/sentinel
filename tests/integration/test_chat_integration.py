@@ -40,7 +40,10 @@ async def test_chat_integration_e2e(
     chunk = Chunk(
         chunk_id="chk_pod_01",
         doc_id="pods.md",
-        text="A Pod is the smallest deployable unit of computing in Kubernetes.",
+        text=(
+            "Kubernetes Pods encapsulate one or more containers. "
+            "A Pod is the smallest deployable unit of computing in Kubernetes."
+        ),
         index=0,
         metadata={"source": "pods.md", "title": "Kubernetes Pods"},
     )
@@ -104,6 +107,8 @@ async def test_chat_integration_e2e(
         assert data1["meta"]["request_id"].startswith("req_")
         assert "trace_id" in data1["meta"]
         assert "span_id" in data1["meta"]
+        assert data1["meta"]["groundedness_passed"] is True
+        assert "groundedness_score" in data1["meta"]
 
         # 4. Second identical request: Cache Hit!
         resp2 = await client.post("/v1/chat", json=req_payload)

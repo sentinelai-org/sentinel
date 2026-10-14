@@ -1,0 +1,186 @@
+{
+  "total_samples": 8,
+  "mean_groundedness": 0.75,
+  "mean_context_recall": 1.0,
+  "mean_answer_relevance": 0.6438,
+  "gate_pass_rate": 0.75,
+  "unanswerable_refusal_rate": 1.0,
+  "passed_gate_threshold": true,
+  "results": [
+    {
+      "sample_id": "eval_001",
+      "question": "What is a Pod in Kubernetes?",
+      "generated_answer": "A Pod is the smallest deployable unit of computing in Kubernetes, encapsulating one or more containers that share storage, network, and specifications.",
+      "expected_answer": "A Pod is the smallest deployable unit of computing in Kubernetes, encapsulating one or more containers that share storage, network, and specifications.",
+      "groundedness_score": 1.0,
+      "context_recall": 1.0,
+      "answer_relevance": 1.0,
+      "gate_passed": true,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "pods.md",
+        "services.md",
+        "pods.md",
+        "pods.md"
+      ],
+      "expected_sources": [
+        "pods.md"
+      ],
+      "latency_ms": 14193.88
+    },
+    {
+      "sample_id": "eval_002",
+      "question": "How do Kubernetes Deployments roll out updates?",
+      "generated_answer": "Kubernetes Deployments provide declarative updates for Pods and ReplicaSets using the RollingUpdate strategy with maxSurge and maxUnavailable parameters.",
+      "expected_answer": "Kubernetes Deployments provide declarative updates for Pods and ReplicaSets using the RollingUpdate strategy with maxSurge and maxUnavailable parameters.",
+      "groundedness_score": 1.0,
+      "context_recall": 1.0,
+      "answer_relevance": 0.9,
+      "gate_passed": true,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "deployments.md",
+        "deployments.md",
+        "deployments.md",
+        "deployments.md"
+      ],
+      "expected_sources": [
+        "deployments.md"
+      ],
+      "latency_ms": 29.66
+    },
+    {
+      "sample_id": "eval_003",
+      "question": "What is the difference between ClusterIP and NodePort Services in Kubernetes?",
+      "generated_answer": "ClusterIP is the default Service type exposing the service on a cluster-internal IP, while NodePort exposes the service on each node's IP at a static port accessible externally.",
+      "expected_answer": "ClusterIP is the default Service type exposing the service on a cluster-internal IP, while NodePort exposes the service on each node's IP at a static port accessible externally.",
+      "groundedness_score": 1.0,
+      "context_recall": 1.0,
+      "answer_relevance": 0.5,
+      "gate_passed": true,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "services.md",
+        "services.md",
+        "architecture.md",
+        "architecture.md"
+      ],
+      "expected_sources": [
+        "services.md"
+      ],
+      "latency_ms": 32.52
+    },
+    {
+      "sample_id": "eval_004",
+      "question": "What are the primary control plane components of Kubernetes?",
+      "generated_answer": "The primary control plane components are kube-apiserver, etcd, kube-scheduler, and kube-controller-manager.",
+      "expected_answer": "The primary control plane components are kube-apiserver, etcd, kube-scheduler, and kube-controller-manager.",
+      "groundedness_score": 1.0,
+      "context_recall": 1.0,
+      "answer_relevance": 1.0,
+      "gate_passed": true,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "architecture.md",
+        "architecture.md",
+        "architecture.md",
+        "services.md"
+      ],
+      "expected_sources": [
+        "architecture.md"
+      ],
+      "latency_ms": 34.91
+    },
+    {
+      "sample_id": "eval_005",
+      "question": "What is the role of kubelet on worker nodes?",
+      "generated_answer": "The kubelet is the primary node agent that runs on each worker node, ensuring containers described in PodSpecs are running and healthy.",
+      "expected_answer": "The kubelet is the primary node agent that runs on each worker node, ensuring containers described in PodSpecs are running and healthy.",
+      "groundedness_score": 1.0,
+      "context_recall": 1.0,
+      "answer_relevance": 0.75,
+      "gate_passed": true,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "architecture.md",
+        "architecture.md",
+        "pods.md",
+        "services.md"
+      ],
+      "expected_sources": [
+        "architecture.md"
+      ],
+      "latency_ms": 30.89
+    },
+    {
+      "sample_id": "eval_006",
+      "question": "How does quantum teleportation entangle particles across black holes?",
+      "generated_answer": "I could not find sufficient relevant documentation in the knowledge base to answer your question.",
+      "expected_answer": "I could not find sufficient relevant documentation in the knowledge base to answer your question.",
+      "groundedness_score": 1.0,
+      "context_recall": 1.0,
+      "answer_relevance": 1.0,
+      "gate_passed": true,
+      "unanswerable": true,
+      "correctly_refused": true,
+      "retrieved_sources": [
+        "pods.md",
+        "pods.md",
+        "architecture.md",
+        "services.md"
+      ],
+      "expected_sources": [],
+      "latency_ms": 27.88
+    },
+    {
+      "sample_id": "eval_007",
+      "question": "How do Services discover Pods in Kubernetes?",
+      "generated_answer": "Sentinel Guardrail: The generated answer could not be verified against the retrieved documentation with sufficient confidence. Please refer to the official documentation.",
+      "expected_answer": "Services use label selectors to identify and route network traffic to a dynamic set of Pods matching the selector.",
+      "groundedness_score": 0.0,
+      "context_recall": 1.0,
+      "answer_relevance": 0.0,
+      "gate_passed": false,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "services.md",
+        "pods.md",
+        "pods.md",
+        "services.md"
+      ],
+      "expected_sources": [
+        "services.md"
+      ],
+      "latency_ms": 29.72
+    },
+    {
+      "sample_id": "eval_008",
+      "question": "What happens when a Deployment rollback is executed?",
+      "generated_answer": "Sentinel Guardrail: The generated answer could not be verified against the retrieved documentation with sufficient confidence. Please refer to the official documentation.",
+      "expected_answer": "Deployments maintain rollout history, allowing users to undo a rollout and restore previous ReplicaSet specifications with zero downtime.",
+      "groundedness_score": 0.0,
+      "context_recall": 1.0,
+      "answer_relevance": 0.0,
+      "gate_passed": false,
+      "unanswerable": false,
+      "correctly_refused": null,
+      "retrieved_sources": [
+        "deployments.md",
+        "deployments.md",
+        "deployments.md",
+        "deployments.md"
+      ],
+      "expected_sources": [
+        "deployments.md"
+      ],
+      "latency_ms": 54.42
+    }
+  ],
+  "timestamp": "2026-10-14T07:44:27.483720+00:00"
+}

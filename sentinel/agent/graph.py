@@ -25,6 +25,7 @@ def create_agent_graph(handler: AgentNodeHandler) -> Any:
     workflow.add_node("retrieve", handler.retrieve)
     workflow.add_node("grade_context", handler.grade_context)
     workflow.add_node("generate", handler.generate)
+    workflow.add_node("validate_groundedness", handler.validate_groundedness)
     workflow.add_node("no_context_answer", handler.no_context_answer)
     workflow.add_node("finalize", handler.finalize)
 
@@ -42,8 +43,9 @@ def create_agent_graph(handler: AgentNodeHandler) -> Any:
         },
     )
 
-    # Both paths converge to finalize -> END
-    workflow.add_edge("generate", "finalize")
+    # Generated answers must pass the Groundedness Gate before finalizing
+    workflow.add_edge("generate", "validate_groundedness")
+    workflow.add_edge("validate_groundedness", "finalize")
     workflow.add_edge("no_context_answer", "finalize")
     workflow.add_edge("finalize", END)
 

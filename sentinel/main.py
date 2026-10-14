@@ -18,6 +18,7 @@ from sentinel.core.config import Settings, get_settings
 from sentinel.core.errors import SentinelError
 from sentinel.core.logging import get_logger, setup_logging
 from sentinel.core.telemetry import setup_telemetry, shutdown_telemetry
+from sentinel.evals.gate import GroundednessGate
 from sentinel.llm.base import LLMProvider
 from sentinel.llm.fake import FakeProvider
 from sentinel.llm.gemini import GeminiProvider
@@ -114,13 +115,15 @@ def build_app(
         )
         app.state.llm_router = router_instance
 
-        # 5. LangGraph Agent compilation
+        # 5. LangGraph Agent compilation with Groundedness Gate (Phase 3)
+        gate = GroundednessGate(threshold=current_settings.groundedness_threshold)
         node_handler = AgentNodeHandler(
             vector_store=vector_store,
             embedder=embedder,
             llm_router=router_instance,
             score_threshold=current_settings.score_threshold,
             top_k=current_settings.retrieval_top_k,
+            groundedness_gate=gate,
         )
         app.state.agent_graph = create_agent_graph(node_handler)
 

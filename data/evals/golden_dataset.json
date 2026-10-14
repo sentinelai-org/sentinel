@@ -1,0 +1,92 @@
+[
+  {
+    "id": "eval_001",
+    "question": "What is a Pod in Kubernetes?",
+    "expected_answer": "A Pod is the smallest deployable unit of computing in Kubernetes, encapsulating one or more containers that share storage, network, and specifications.",
+    "expected_sources": ["pods.md"],
+    "ground_truth_claims": [
+      "smallest deployable unit of computing",
+      "encapsulates one or more containers",
+      "shared storage and network"
+    ],
+    "unanswerable": false
+  },
+  {
+    "id": "eval_002",
+    "question": "How do Kubernetes Deployments roll out updates?",
+    "expected_answer": "Kubernetes Deployments provide declarative updates for Pods and ReplicaSets using the RollingUpdate strategy with maxSurge and maxUnavailable parameters.",
+    "expected_sources": ["deployments.md"],
+    "ground_truth_claims": [
+      "declarative updates for Pods and ReplicaSets",
+      "RollingUpdate strategy",
+      "maxSurge and maxUnavailable"
+    ],
+    "unanswerable": false
+  },
+  {
+    "id": "eval_003",
+    "question": "What is the difference between ClusterIP and NodePort Services in Kubernetes?",
+    "expected_answer": "ClusterIP is the default Service type exposing the service on a cluster-internal IP, while NodePort exposes the service on each node's IP at a static port accessible externally.",
+    "expected_sources": ["services.md"],
+    "ground_truth_claims": [
+      "ClusterIP is internal to the cluster",
+      "NodePort exposes service on each node IP at static port"
+    ],
+    "unanswerable": false
+  },
+  {
+    "id": "eval_004",
+    "question": "What are the primary control plane components of Kubernetes?",
+    "expected_answer": "The primary control plane components are kube-apiserver, etcd, kube-scheduler, and kube-controller-manager.",
+    "expected_sources": ["architecture.md"],
+    "ground_truth_claims": [
+      "kube-apiserver",
+      "etcd",
+      "kube-scheduler",
+      "kube-controller-manager"
+    ],
+    "unanswerable": false
+  },
+  {
+    "id": "eval_005",
+    "question": "What is the role of kubelet on worker nodes?",
+    "expected_answer": "The kubelet is the primary node agent that runs on each worker node, ensuring containers described in PodSpecs are running and healthy.",
+    "expected_sources": ["architecture.md"],
+    "ground_truth_claims": [
+      "primary node agent",
+      "ensures containers described in PodSpecs are running and healthy"
+    ],
+    "unanswerable": false
+  },
+  {
+    "id": "eval_006",
+    "question": "How does quantum teleportation entangle particles across black holes?",
+    "expected_answer": "I could not find sufficient relevant documentation in the knowledge base to answer your question.",
+    "expected_sources": [],
+    "ground_truth_claims": [],
+    "unanswerable": true
+  },
+  {
+    "id": "eval_007",
+    "question": "How do Services discover Pods in Kubernetes?",
+    "expected_answer": "Services use label selectors to identify and route network traffic to a dynamic set of Pods matching the selector.",
+    "expected_sources": ["services.md"],
+    "ground_truth_claims": [
+      "label selectors",
+      "route traffic to matching Pods"
+    ],
+    "unanswerable": false
+  },
+  {
+    "id": "eval_008",
+    "question": "What happens when a Deployment rollback is executed?",
+    "expected_answer": "Deployments maintain rollout history, allowing users to undo a rollout and restore previous ReplicaSet specifications with zero downtime.",
+    "expected_sources": ["deployments.md"],
+    "ground_truth_claims": [
+      "rollout history",
+      "undo rollout",
+      "previous ReplicaSet"
+    ],
+    "unanswerable": false
+  }
+]

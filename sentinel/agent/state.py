@@ -16,3 +16,5 @@ class AgentState(TypedDict):
     answer: str
     sources: list[dict[str, Any]]
     meta: dict[str, Any]
+    groundedness_score: float | None
+    groundedness_passed: bool

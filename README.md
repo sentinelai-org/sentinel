@@ -127,7 +127,9 @@ Sample JSON response:
     "cache_hit": false,
     "request_id": "req_8a39f1c7e90b",
     "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "span_id": "00f067aa0ba902b7"
+    "span_id": "00f067aa0ba902b7",
+    "groundedness_score": 0.9412,
+    "groundedness_passed": true
   }
 }
 ```
@@ -145,10 +147,13 @@ ruff check .
 ruff format --check .
 
 # Run type checking
-mypy sentinel tests
+mypy sentinel tests scripts
 
 # Run unit & integration tests (runs 100% locally with 0 Gemini quota burned)
 pytest -v
+
+# Run automated evaluation benchmark & Groundedness Gate (0-cost offline mode)
+python scripts/evaluate.py --dataset data/evals/golden_dataset.json
 ```
 
 ---
@@ -159,8 +164,8 @@ pytest -v
   - FastAPI Gateway, LangGraph agent, Qdrant vector store, Redis cache, LLM provider fallback, Docker Compose, CI pipeline.
 - [x] **Phase 2: Observability & OpenTelemetry Distributed Tracing**
   - OpenTelemetry auto-instrumentation, trace context propagation across LLM and vector steps, export to Jaeger / Phoenix / Langfuse.
-- [ ] **Phase 3: Automated Evaluations & Groundedness Gate**
-  - Continuous evaluation harness with Ragas / TruLens (faithfulness, answer relevance, context recall). Automated regression eval suites.
+- [x] **Phase 3: Automated Evaluations & Groundedness Gate**
+  - Continuous evaluation harness with RAG Triad metrics (faithfulness, context recall, answer relevance), golden benchmark dataset, runtime Groundedness Gate, and regression gating CLI.
 - [ ] **Phase 4: Safety Guardrails, Semantic Caching & Cost Routing**
   - Input/output safety validation (NeMo Guardrails / Llama Guard), Qdrant-backed semantic cache with cosine similarity matching, dynamic cost-aware LLM router.
 - [ ] **Phase 5: Streaming & Asynchronous Background Tasks**
