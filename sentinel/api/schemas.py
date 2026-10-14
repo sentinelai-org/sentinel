@@ -38,6 +38,12 @@ class ChatMetadata(BaseModel):
     model: str = Field(description="Model identifier that answered the query")
     cache_hit: bool = Field(description="Whether the response was served from exact-match cache")
     request_id: str = Field(description="Unique request tracing ID")
+    trace_id: str | None = Field(
+        default=None, description="OpenTelemetry 32-hex trace ID for distributed tracing"
+    )
+    span_id: str | None = Field(
+        default=None, description="OpenTelemetry 16-hex span ID for distributed tracing"
+    )
 
 
 class ChatResponse(BaseModel):

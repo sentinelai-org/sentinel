@@ -97,6 +97,8 @@ async def test_chat_integration_e2e(
         assert data1["meta"]["tokens_out"] == 18
         assert data1["meta"]["latency_ms"] >= 0.0
         assert data1["meta"]["request_id"].startswith("req_")
+        assert "trace_id" in data1["meta"]
+        assert "span_id" in data1["meta"]
 
         # 4. Second identical request: Cache Hit!
         resp2 = await client.post("/v1/chat", json=req_payload)

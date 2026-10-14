@@ -6,11 +6,13 @@ from typing import Any
 
 from sentinel.agent.state import AgentState
 from sentinel.core.logging import get_logger
+from sentinel.core.telemetry import get_tracer
 from sentinel.llm.router import LLMRouter
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.vector_store import VectorStore
 
 logger = get_logger(__name__)
+tracer = get_tracer("sentinel.agent")
 
 SYSTEM_PROMPT = """You are Sentinel, an expert AI platform assistant for technical documentation.
 Answer the user's question accurately using ONLY the provided context snippets.
@@ -40,111 +42,136 @@ class AgentNodeHandler:
         question = state["question"]
         logger.info("Retrieving documents for question", extra={"question": question})
 
-        query_vec = self.embedder.embed_text(question)
-        scored_docs = await self.vector_store.search(
-            query_vector=query_vec,
-            top_k=self.top_k,
-            score_threshold=0.0,
-        )
+        with tracer.start_as_current_span("rag.retrieve") as span:
+            span.set_attribute("rag.query", question)
+            span.set_attribute("rag.top_k", self.top_k)
 
-        documents: list[dict[str, Any]] = [
-            {
-                "text": doc.text,
-                "score": doc.score,
-                "source": doc.metadata.get("source", "unknown"),
-                "chunk_id": doc.chunk_id,
-            }
-            for doc in scored_docs
-        ]
+            query_vec = self.embedder.embed_text(question)
+            scored_docs = await self.vector_store.search(
+                query_vector=query_vec,
+                top_k=self.top_k,
+                score_threshold=0.0,
+            )
 
-        logger.info(
-            "Retrieved documents",
-            extra={
-                "count": len(documents),
-                "top_score": documents[0]["score"] if documents else 0.0,
-            },
-        )
-        return {"documents": documents}
+            documents: list[dict[str, Any]] = [
+                {
+                    "text": doc.text,
+                    "score": doc.score,
+                    "source": doc.metadata.get("source", "unknown"),
+                    "chunk_id": doc.chunk_id,
+                }
+                for doc in scored_docs
+            ]
+
+            span.set_attribute("rag.retrieved_chunks_count", len(documents))
+            top_score = documents[0]["score"] if documents else 0.0
+            span.set_attribute("rag.top_score", top_score)
+
+            logger.info(
+                "Retrieved documents",
+                extra={
+                    "count": len(documents),
+                    "top_score": top_score,
+                },
+            )
+            return {"documents": documents}
 
     async def grade_context(self, state: AgentState) -> dict[str, Any]:
         """Grade whether retrieved documents are relevant enough to answer."""
         documents = state.get("documents", [])
 
-        # Filter documents that meet similarity score threshold
-        relevant_docs = [doc for doc in documents if doc["score"] >= self.score_threshold]
+        with tracer.start_as_current_span("rag.grade_context") as span:
+            span.set_attribute("rag.score_threshold", self.score_threshold)
+            span.set_attribute("rag.total_docs", len(documents))
 
-        is_relevant = len(relevant_docs) > 0
-        logger.info(
-            "Graded context relevance",
-            extra={
-                "total_docs": len(documents),
-                "relevant_docs": len(relevant_docs),
-                "threshold": self.score_threshold,
-                "is_relevant": is_relevant,
-            },
-        )
+            # Filter documents that meet similarity score threshold
+            relevant_docs = [doc for doc in documents if doc["score"] >= self.score_threshold]
 
-        return {
-            "context_relevant": is_relevant,
-            "documents": relevant_docs if is_relevant else [],
-        }
+            is_relevant = len(relevant_docs) > 0
+            span.set_attribute("rag.relevant_docs_count", len(relevant_docs))
+            span.set_attribute("rag.context_relevant", is_relevant)
+
+            logger.info(
+                "Graded context relevance",
+                extra={
+                    "total_docs": len(documents),
+                    "relevant_docs": len(relevant_docs),
+                    "threshold": self.score_threshold,
+                    "is_relevant": is_relevant,
+                },
+            )
+
+            return {
+                "context_relevant": is_relevant,
+                "documents": relevant_docs if is_relevant else [],
+            }
 
     async def generate(self, state: AgentState) -> dict[str, Any]:
         """Generate answer using LLM router and verified context."""
         question = state["question"]
         documents = state.get("documents", [])
 
-        context_blocks = "\n\n---\n\n".join(
-            f"[Source: {doc['source']} (Score: {doc['score']:.2f})]\n{doc['text']}"
-            for doc in documents
-        )
-        prompt = (
-            f"Context:\n{context_blocks}\n\n"
-            f"Question: {question}\n\n"
-            f"Answer based only on the above context:"
-        )
+        with tracer.start_as_current_span("agent.generate") as span:
+            span.set_attribute("agent.context_chunks_count", len(documents))
 
-        result = await self.llm_router.generate(
-            prompt=prompt,
-            system_instruction=SYSTEM_PROMPT,
-        )
+            context_blocks = "\n\n---\n\n".join(
+                f"[Source: {doc['source']} (Score: {doc['score']:.2f})]\n{doc['text']}"
+                for doc in documents
+            )
+            prompt = (
+                f"Context:\n{context_blocks}\n\n"
+                f"Question: {question}\n\n"
+                f"Answer based only on the above context:"
+            )
 
-        meta = state.get("meta", {})
-        meta.update(
-            {
-                "tokens_in": result.tokens_in,
-                "tokens_out": result.tokens_out,
-                "provider": result.provider,
-                "model": result.model,
-                "llm_latency_ms": result.latency_ms,
+            result = await self.llm_router.generate(
+                prompt=prompt,
+                system_instruction=SYSTEM_PROMPT,
+            )
+
+            span.set_attribute("gen_ai.system", result.provider)
+            span.set_attribute("gen_ai.response.model", result.model)
+            span.set_attribute("gen_ai.usage.input_tokens", result.tokens_in)
+            span.set_attribute("gen_ai.usage.output_tokens", result.tokens_out)
+
+            meta = state.get("meta", {})
+            meta.update(
+                {
+                    "tokens_in": result.tokens_in,
+                    "tokens_out": result.tokens_out,
+                    "provider": result.provider,
+                    "model": result.model,
+                    "llm_latency_ms": result.latency_ms,
+                }
+            )
+
+            return {
+                "answer": result.text,
+                "meta": meta,
             }
-        )
-
-        return {
-            "answer": result.text,
-            "meta": meta,
-        }
 
     async def no_context_answer(self, state: AgentState) -> dict[str, Any]:
         """Deterministic response when context is irrelevant to prevent hallucination."""
-        logger.info("Routing to no_context_answer: no relevant context found")
-        meta = state.get("meta", {})
-        meta.update(
-            {
-                "tokens_in": 0,
-                "tokens_out": 0,
-                "provider": "system",
-                "model": "none",
-                "llm_latency_ms": 0.0,
+        with tracer.start_as_current_span("agent.no_context_answer") as span:
+            span.set_attribute("agent.refusal", True)
+            logger.info("Routing to no_context_answer: no relevant context found")
+            meta = state.get("meta", {})
+            meta.update(
+                {
+                    "tokens_in": 0,
+                    "tokens_out": 0,
+                    "provider": "system",
+                    "model": "none",
+                    "llm_latency_ms": 0.0,
+                }
+            )
+            return {
+                "answer": (
+                    "I could not find sufficient relevant documentation in the knowledge base "
+                    "to answer your question. Please ensure the topic is covered in the documentation."
+                ),
+                "meta": meta,
             }
-        )
-        return {
-            "answer": (
-                "I could not find sufficient relevant documentation in the knowledge base "
-                "to answer your question. Please ensure the topic is covered in the documentation."
-            ),
-            "meta": meta,
-        }
 
     async def finalize(self, state: AgentState) -> dict[str, Any]:
         """Build sources and final output payload."""

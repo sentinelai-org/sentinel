@@ -83,6 +83,7 @@ docker compose up -d --build
 ```
 This boots:
 - **FastAPI Gateway**: `http://localhost:8000`
+- **Jaeger Tracing Web UI**: `http://localhost:16686`
 - **Qdrant Vector Database**: `http://localhost:6333`
 - **Redis Response Cache**: `localhost:6379`
 - *(Optional)* **Ollama**: Run `docker compose --profile ollama up -d` for local offline LLM fallback.
@@ -124,7 +125,9 @@ Sample JSON response:
     "provider": "gemini",
     "model": "gemini-2.5-flash",
     "cache_hit": false,
-    "request_id": "req_8a39f1c7e90b"
+    "request_id": "req_8a39f1c7e90b",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "span_id": "00f067aa0ba902b7"
   }
 }
 ```
@@ -154,7 +157,7 @@ pytest -v
 
 - [x] **Phase 1: Resilient RAG Gateway Foundation**
   - FastAPI Gateway, LangGraph agent, Qdrant vector store, Redis cache, LLM provider fallback, Docker Compose, CI pipeline.
-- [ ] **Phase 2: Observability & OpenTelemetry Distributed Tracing**
+- [x] **Phase 2: Observability & OpenTelemetry Distributed Tracing**
   - OpenTelemetry auto-instrumentation, trace context propagation across LLM and vector steps, export to Jaeger / Phoenix / Langfuse.
 - [ ] **Phase 3: Automated Evaluations & Groundedness Gate**
   - Continuous evaluation harness with Ragas / TruLens (faithfulness, answer relevance, context recall). Automated regression eval suites.

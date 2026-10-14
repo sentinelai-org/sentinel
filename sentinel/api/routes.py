@@ -18,6 +18,7 @@ from sentinel.api.schemas import (
     SourceItem,
 )
 from sentinel.core.logging import get_logger
+from sentinel.core.telemetry import get_current_span_id, get_current_trace_id
 from sentinel.rag.vector_store import VectorStore
 
 logger = get_logger(__name__)
@@ -101,6 +102,8 @@ async def chat(
                 model=cached.model,
                 cache_hit=True,
                 request_id=req_id,
+                trace_id=get_current_trace_id(),
+                span_id=get_current_span_id(),
             ),
         )
 
@@ -132,6 +135,8 @@ async def chat(
         model=meta_info.get("model", "unknown"),
         cache_hit=False,
         request_id=req_id,
+        trace_id=get_current_trace_id(),
+        span_id=get_current_span_id(),
     )
 
     # Step 3: Populate cache if context was grounded and an answer was produced

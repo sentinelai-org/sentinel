@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from sentinel.agent.cache import ResponseCache
 from sentinel.agent.graph import create_agent_graph
@@ -16,6 +17,7 @@ from sentinel.api.routes import router
 from sentinel.core.config import Settings, get_settings
 from sentinel.core.errors import SentinelError
 from sentinel.core.logging import get_logger, setup_logging
+from sentinel.core.telemetry import setup_telemetry, shutdown_telemetry
 from sentinel.llm.base import LLMProvider
 from sentinel.llm.fake import FakeProvider
 from sentinel.llm.gemini import GeminiProvider
@@ -37,13 +39,15 @@ def build_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-        # 1. Structured Logging setup
+        # 1. Structured Logging and OpenTelemetry setup
         setup_logging(current_settings.log_level)
+        setup_telemetry(current_settings)
         logger.info(
             "Starting Sentinel LLMOps Gateway",
             extra={
                 "environment": current_settings.environment,
                 "model": current_settings.gemini_model,
+                "otel_enabled": current_settings.otel_enabled,
             },
         )
 
@@ -126,6 +130,7 @@ def build_app(
         logger.info("Shutting down Sentinel services")
         await cache.close()
         await vector_store.close()
+        shutdown_telemetry()
 
     app = FastAPI(
         title="Sentinel LLMOps Gateway",
@@ -156,6 +161,10 @@ def build_app(
 
     # Routes
     app.include_router(router)
+
+    # OpenTelemetry FastAPI Auto-Instrumentation
+    if current_settings.otel_enabled:
+        FastAPIInstrumentor.instrument_app(app)
 
     return app
 

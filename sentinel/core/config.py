@@ -66,6 +66,16 @@ class Settings(BaseSettings):
         default=0.45, description="Minimum similarity score threshold for context grading"
     )
 
+    # OpenTelemetry Distributed Tracing (Phase 2)
+    otel_enabled: bool = Field(default=True, description="Enable OpenTelemetry distributed tracing")
+    otel_service_name: str = Field(
+        default="sentinel-gateway", description="Service name reported to tracing collectors"
+    )
+    otel_exporter_otlp_endpoint: str = Field(
+        default="http://localhost:4318/v1/traces",
+        description="OTLP HTTP collector endpoint for traces (e.g. Jaeger or Phoenix)",
+    )
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

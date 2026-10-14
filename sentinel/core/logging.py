@@ -9,6 +9,8 @@ import sys
 from datetime import UTC, datetime
 from typing import Any
 
+from opentelemetry import trace
+
 # Context variable storing the current request ID
 _request_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "request_id", default=None
@@ -25,16 +27,28 @@ def get_request_id() -> str | None:
     return _request_id_ctx.get()
 
 
+def _get_trace_context() -> tuple[str | None, str | None]:
+    """Extract trace_id and span_id from current active OpenTelemetry span."""
+    span = trace.get_current_span()
+    ctx = span.get_span_context()
+    if ctx.is_valid and ctx.trace_id != 0:
+        return f"{ctx.trace_id:032x}", f"{ctx.span_id:016x}"
+    return None, None
+
+
 class JSONFormatter(logging.Formatter):
-    """Custom logging formatter outputting standard JSON objects."""
+    """Custom logging formatter outputting standard JSON objects with trace correlation."""
 
     def format(self, record: logging.LogRecord) -> str:
+        trace_id, span_id = _get_trace_context()
         log_record: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
             "request_id": get_request_id(),
+            "trace_id": trace_id,
+            "span_id": span_id,
         }
 
         # Include exception trace if present
