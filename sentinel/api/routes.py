@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
 
 from sentinel.agent.cache import CachedResponse, ResponseCache
 from sentinel.agent.state import AgentState
@@ -39,6 +41,14 @@ def get_vector_store(request: Request) -> VectorStore:
 def get_agent_graph(request: Request) -> Any:
     """Dependency provider for compiled LangGraph agent."""
     return request.app.state.agent_graph
+
+
+@router.get("/ui", response_class=HTMLResponse, tags=["UI"])
+async def get_ui() -> str:
+    """Serve the simple web UI."""
+    ui_path = os.path.join(os.path.dirname(__file__), "ui.html")
+    with open(ui_path, encoding="utf-8") as f:
+        return f.read()
 
 
 @router.get("/", tags=["Info"])

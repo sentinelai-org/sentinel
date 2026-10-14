@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel UI</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .chat-container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .message { margin-bottom: 15px; }
+        .user { color: blue; font-weight: bold; }
+        .bot { color: green; font-weight: bold; }
+        .meta { font-size: 0.8em; color: gray; margin-top: 5px; }
+        input[type="text"] { width: 70%; padding: 10px; }
+        button { padding: 10px 20px; cursor: pointer; }
+        .lang-switch { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="lang-switch">
+        <button onclick="setLanguage('en')">English</button>
+        <button onclick="setLanguage('fr')">Français</button>
+    </div>
+
+    <div id="content-en" style="display:block;">
+        <h1>Sentinel LLMOps Gateway</h1>
+        <p>Sentinel is a production-grade LLMOps gateway and agent platform engineered for high reliability, zero-cost resilience, and full operational observability.</p>
+        <p>Key features include caching, LangGraph RAG, and an LLM Router with local Ollama fallback.</p>
+    </div>
+
+    <div id="content-fr" style="display:none;">
+        <h1>Passerelle LLMOps Sentinel</h1>
+        <p>Sentinel est une passerelle LLMOps et une plateforme d'agents de qualité production, conçue pour une haute fiabilité, une résilience à coût nul et une observabilité opérationnelle complète.</p>
+        <p>Les fonctionnalités clés incluent la mise en cache, un agent RAG LangGraph et un routeur LLM avec un repli local Ollama.</p>
+    </div>
+
+    <div class="chat-container">
+        <div id="chat-history"></div>
+        <div style="margin-top: 20px;">
+            <input type="text" id="question" placeholder="Ask a question... / Posez une question...">
+            <button onclick="askQuestion()">Send / Envoyer</button>
+        </div>
+    </div>
+
+    <script>
+        function setLanguage(lang) {
+            document.getElementById('content-en').style.display = lang === 'en' ? 'block' : 'none';
+            document.getElementById('content-fr').style.display = lang === 'fr' ? 'block' : 'none';
+        }
+
+        async function askQuestion() {
+            const questionInput = document.getElementById('question');
+            const question = questionInput.value;
+            if (!question) return;
+
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.innerHTML += `<div class="message"><span class="user">User:</span> ${question}</div>`;
+            questionInput.value = '';
+
+            try {
+                const response = await fetch('/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question, session_id: "ui-session" })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let metaHtml = `<div class="meta">Latency: ${data.meta.latency_ms}ms | Provider: ${data.meta.provider} (${data.meta.model}) | Cache Hit: ${data.meta.cache_hit}</div>`;
+                    chatHistory.innerHTML += `<div class="message"><span class="bot">Sentinel:</span> ${data.answer} ${metaHtml}</div>`;
+                } else {
+                    chatHistory.innerHTML += `<div class="message"><span class="bot" style="color:red;">Error:</span> ${data.error || 'Server error'}</div>`;
+                }
+
+            } catch (error) {
+                chatHistory.innerHTML += `<div class="message"><span class="bot" style="color:red;">Error:</span> Failed to connect to server.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
