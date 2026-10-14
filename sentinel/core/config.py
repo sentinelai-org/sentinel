@@ -51,13 +51,20 @@ class Settings(BaseSettings):
         description="Local sentence-transformers embedding model name",
     )
 
-    # Redis Cache
+    # Redis Cache & Background Queue (Phase 5)
     redis_url: str = Field(default="redis://localhost:6379/0", description="Redis connection URL")
     cache_ttl_seconds: int = Field(
         default=3600, description="Exact-match response cache TTL in seconds"
     )
     cache_enabled: bool = Field(
         default=True, description="Enable or disable Redis exact-match cache"
+    )
+    ingest_stream_name: str = Field(
+        default="sentinel:stream:ingest_jobs",
+        description="Redis stream key for background ingestion jobs",
+    )
+    ingest_consumer_group: str = Field(
+        default="sentinel_workers", description="Redis consumer group for background ingest workers"
     )
 
     # RAG & Context Grading

@@ -10,6 +10,7 @@ from sentinel.agent.cache import CachedResponse, ResponseCache
 from sentinel.llm.fake import FakeProvider
 from sentinel.rag.chunker import Chunk
 from sentinel.rag.vector_store import ScoredDocument, VectorStore
+from sentinel.workers.queue import InMemoryJobQueue
 
 
 class InMemoryVectorStore(VectorStore):
@@ -100,3 +101,8 @@ def fake_llm_provider() -> FakeProvider:
         provider_name="fake-gemini",
         model="fake-gemini-2.5",
     )
+
+
+@pytest.fixture
+def in_memory_job_queue() -> InMemoryJobQueue:
+    return InMemoryJobQueue()

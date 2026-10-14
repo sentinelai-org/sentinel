@@ -101,10 +101,23 @@ python scripts/ingest.py --docs-dir data/docs
 curl http://localhost:8000/healthz
 curl http://localhost:8000/readyz
 
-# Ask a question
+# Ask a question (synchronous REST)
 curl -X POST http://localhost:8000/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question": "How do Kubernetes Deployments roll out updates?"}'
+
+# Stream answer tokens in real-time (Server-Sent Events)
+curl -N -X POST http://localhost:8000/v1/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How do Kubernetes Deployments roll out updates?"}'
+
+# Submit background document ingestion job (Redis Streams)
+curl -X POST http://localhost:8000/v1/ingest/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"documents": [{"content": "Custom docs text...", "source": "guide.md"}]}'
+
+# Query ingestion job status & progress
+curl http://localhost:8000/v1/ingest/jobs/{job_id}
 ```
 
 Sample JSON response:
@@ -171,8 +184,8 @@ python scripts/evaluate.py --dataset data/evals/golden_dataset.json
   - Continuous evaluation harness with RAG Triad metrics (faithfulness, context recall, answer relevance), golden benchmark dataset, runtime Groundedness Gate, and regression gating CLI.
 - [x] **Phase 4: Safety Guardrails, Semantic Caching & Cost Routing**
   - Input/output safety validation (prompt injection detection, PII masking, system leak guard), Qdrant-backed semantic vector cache with cosine matching, dynamic cost-aware router and token pricing accounting.
-- [ ] **Phase 5: Streaming & Asynchronous Background Tasks**
-  - Server-Sent Events (SSE) token streaming for `/v1/chat`, async job queue via Redis Streams / Celery for large ingestion batches.
+- [x] **Phase 5: Streaming & Asynchronous Background Tasks**
+  - Real-time Server-Sent Events (SSE) token streaming (`POST /v1/chat/stream`), background document ingestion job queue via Redis Streams (`sentinel:stream:ingest_jobs`), resilient consumer worker (`sentinel.workers.worker`), and modern interactive Web UI.
 - [ ] **Phase 6: GitOps Deployment & Production CI/CD Gate**
   - Local Kubernetes cluster via `kind`, Helm charts, automated Argo CD synchronization, and pull request performance gating.
 - [ ] **Phase 7: Closed-Loop Feedback & Automated Load Testing**

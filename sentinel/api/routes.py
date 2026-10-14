@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 from sentinel.agent.cache import CachedResponse, ResponseCache
+from sentinel.agent.nodes import SYSTEM_PROMPT
 from sentinel.agent.semantic_cache import SemanticCache
 from sentinel.agent.state import AgentState
 from sentinel.api.schemas import (
@@ -17,12 +21,21 @@ from sentinel.api.schemas import (
     ChatRequest,
     ChatResponse,
     HealthResponse,
+    IngestJobRequest,
+    IngestJobResponse,
+    IngestJobStatus,
     ReadyResponse,
     SourceItem,
 )
+from sentinel.core.config import get_settings
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_current_span_id, get_current_trace_id
+from sentinel.evals.gate import GroundednessGate
+from sentinel.guardrails.input import InputGuardrail
+from sentinel.guardrails.output import OutputGuardrail
+from sentinel.llm.cost_router import CostAwareRouter
 from sentinel.rag.vector_store import VectorStore
+from sentinel.workers.queue import BaseJobQueue
 
 logger = get_logger(__name__)
 
@@ -47,6 +60,21 @@ def get_agent_graph(request: Request) -> Any:
 def get_semantic_cache(request: Request) -> SemanticCache | None:
     """Dependency provider for vector-based semantic response cache."""
     return getattr(request.app.state, "semantic_cache", None)
+
+
+def get_job_queue(request: Request) -> BaseJobQueue:
+    """Dependency provider for asynchronous ingestion job queue."""
+    return request.app.state.job_queue
+
+
+def get_llm_router(request: Request) -> Any:
+    """Dependency provider for LLM router."""
+    return request.app.state.llm_router
+
+
+def get_embedder(request: Request) -> Any:
+    """Dependency provider for text embedder."""
+    return request.app.state.embedder
 
 
 @router.get("/ui", response_class=HTMLResponse, tags=["UI"])
@@ -236,4 +264,283 @@ async def chat(
         answer=answer,
         sources=[SourceItem(**s) for s in sources_data],
         meta=meta,
+    )
+
+
+@router.post(
+    "/v1/ingest/jobs",
+    response_model=IngestJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["Ingest"],
+)
+async def submit_ingest_job(
+    payload: IngestJobRequest,
+    job_queue: BaseJobQueue = Depends(get_job_queue),
+) -> IngestJobResponse:
+    """Submit document batch for background asynchronous ingestion via Redis Streams."""
+    docs_payload = [doc.model_dump() for doc in payload.documents]
+    job_id = await job_queue.enqueue_job(docs_payload)
+    return IngestJobResponse(
+        job_id=job_id,
+        status="queued",
+        total_documents=len(payload.documents),
+        created_at=datetime.now(UTC).isoformat(),
+    )
+
+
+@router.get(
+    "/v1/ingest/jobs/{job_id}",
+    response_model=IngestJobStatus,
+    tags=["Ingest"],
+)
+async def get_ingest_job_status(
+    job_id: str,
+    job_queue: BaseJobQueue = Depends(get_job_queue),
+) -> IngestJobStatus:
+    """Retrieve status, progress percentage, and lifecycle state of an ingestion job."""
+    status_record = await job_queue.get_job_status(job_id)
+    if status_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ingestion job '{job_id}' not found",
+        )
+    return IngestJobStatus(**status_record)
+
+
+@router.post("/v1/chat/stream", tags=["Chat"])
+async def chat_stream(
+    payload: ChatRequest,
+    request: Request,
+    cache: ResponseCache = Depends(get_cache),
+    semantic_cache: SemanticCache | None = Depends(get_semantic_cache),
+    vector_store: VectorStore = Depends(get_vector_store),
+    embedder: Any = Depends(get_embedder),
+    llm_router: Any = Depends(get_llm_router),
+) -> StreamingResponse:
+    """Server-Sent Events (SSE) streaming chat endpoint with real-time token delivery."""
+    settings = get_settings()
+    req_id = getattr(request.state, "request_id", "req_unknown")
+    start_time = getattr(request.state, "start_time", time.perf_counter())
+
+    async def sse_event_stream() -> AsyncIterator[str]:
+        # Step 1: L1 Exact-match cache hit
+        cached = await cache.get(payload.question)
+        if cached is not None:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            yield f"event: sources\ndata: {json.dumps(cached.sources)}\n\n"
+            yield f"event: token\ndata: {json.dumps({'token': cached.answer})}\n\n"
+            meta = {
+                "latency_ms": round(elapsed_ms, 2),
+                "tokens_in": cached.tokens_in,
+                "tokens_out": cached.tokens_out,
+                "provider": cached.provider,
+                "model": cached.model,
+                "cache_hit": True,
+                "cache_type": "exact",
+                "cost_usd": 0.0,
+                "guardrail_passed": True,
+                "groundedness_passed": True,
+                "groundedness_score": 1.0,
+                "request_id": req_id,
+                "trace_id": get_current_trace_id(),
+                "span_id": get_current_span_id(),
+            }
+            yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
+            return
+
+        # Step 2: L2 Semantic cache hit
+        if semantic_cache is not None:
+            sem_cached, sim_score = await semantic_cache.get(payload.question)
+            if sem_cached is not None:
+                elapsed_ms = (time.perf_counter() - start_time) * 1000
+                yield f"event: sources\ndata: {json.dumps(sem_cached.sources)}\n\n"
+                yield f"event: token\ndata: {json.dumps({'token': sem_cached.answer})}\n\n"
+                meta = {
+                    "latency_ms": round(elapsed_ms, 2),
+                    "tokens_in": sem_cached.tokens_in,
+                    "tokens_out": sem_cached.tokens_out,
+                    "provider": sem_cached.provider,
+                    "model": sem_cached.model,
+                    "cache_hit": True,
+                    "cache_type": "semantic",
+                    "cost_usd": 0.0,
+                    "guardrail_passed": True,
+                    "groundedness_passed": True,
+                    "groundedness_score": 1.0,
+                    "request_id": req_id,
+                    "trace_id": get_current_trace_id(),
+                    "span_id": get_current_span_id(),
+                }
+                yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
+                return
+
+        # Step 3: Input Guardrails
+        input_guardrail = InputGuardrail(enabled=settings.guardrails_enabled)
+        eval_result = input_guardrail.validate(payload.question)
+        if not eval_result.allowed:
+            refusal_text = f"Sentinel Guardrail: Request blocked for safety ({eval_result.reason})."
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            yield "event: sources\ndata: []\n\n"
+            yield f"event: token\ndata: {json.dumps({'token': refusal_text})}\n\n"
+            meta = {
+                "latency_ms": round(elapsed_ms, 2),
+                "tokens_in": 0,
+                "tokens_out": 0,
+                "provider": "guardrail",
+                "model": "safety-filter",
+                "cache_hit": False,
+                "cache_type": "none",
+                "cost_usd": 0.0,
+                "guardrail_passed": False,
+                "groundedness_passed": True,
+                "groundedness_score": 1.0,
+                "request_id": req_id,
+                "trace_id": get_current_trace_id(),
+                "span_id": get_current_span_id(),
+            }
+            yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
+            return
+
+        sanitized_question = eval_result.sanitized_text
+
+        # Step 4: Vector Retrieval & Grading
+        query_vec = embedder.embed_text(sanitized_question)
+        scored_docs = await vector_store.search(
+            query_vector=query_vec,
+            top_k=settings.retrieval_top_k,
+            score_threshold=0.0,
+        )
+        relevant_docs = [doc for doc in scored_docs if doc.score >= settings.score_threshold]
+
+        if not relevant_docs:
+            refusal = (
+                "I could not find sufficient relevant documentation in the knowledge base "
+                "to answer your question. Please ensure the topic is covered in the documentation."
+            )
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            yield "event: sources\ndata: []\n\n"
+            yield f"event: token\ndata: {json.dumps({'token': refusal})}\n\n"
+            meta = {
+                "latency_ms": round(elapsed_ms, 2),
+                "tokens_in": 0,
+                "tokens_out": 0,
+                "provider": "system",
+                "model": "none",
+                "cache_hit": False,
+                "cache_type": "none",
+                "cost_usd": 0.0,
+                "guardrail_passed": True,
+                "groundedness_passed": True,
+                "groundedness_score": 1.0,
+                "request_id": req_id,
+                "trace_id": get_current_trace_id(),
+                "span_id": get_current_span_id(),
+            }
+            yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
+            return
+
+        # Format sources
+        sources = [
+            {
+                "source": doc.metadata.get("source", "unknown"),
+                "content": doc.text[:250] + ("..." if len(doc.text) > 250 else ""),
+                "score": round(doc.score, 4),
+            }
+            for doc in relevant_docs
+        ]
+        yield f"event: sources\ndata: {json.dumps(sources)}\n\n"
+
+        context_blocks = "\n\n---\n\n".join(
+            f"[Source: {doc.metadata.get('source', 'unknown')} (Score: {doc.score:.2f})]\n{doc.text}"
+            for doc in relevant_docs
+        )
+        prompt = (
+            f"Context:\n{context_blocks}\n\n"
+            f"Question: {sanitized_question}\n\n"
+            f"Answer based only on the above context:"
+        )
+
+        # Step 5: Stream token generator
+        stream_tokens: list[str] = []
+        if isinstance(llm_router, CostAwareRouter):
+            token_iter = llm_router.route_and_stream(
+                prompt=prompt,
+                question=sanitized_question,
+                system_instruction=SYSTEM_PROMPT,
+            )
+        else:
+            token_iter = llm_router.generate_stream(
+                prompt=prompt,
+                system_instruction=SYSTEM_PROMPT,
+            )
+
+        try:
+            async for token in token_iter:
+                stream_tokens.append(token)
+                yield f"event: token\ndata: {json.dumps({'token': token})}\n\n"
+        except Exception as exc:
+            logger.error("Streaming error during token generation: %s", exc)
+            yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+            return
+
+        full_answer = "".join(stream_tokens)
+
+        # Step 6: Verify Groundedness & Output Guardrail
+        gate = GroundednessGate(threshold=settings.groundedness_threshold)
+        gate_res = gate.evaluate(
+            answer=full_answer,
+            context_chunks=[doc.text for doc in relevant_docs],
+        )
+
+        out_guard = OutputGuardrail(enabled=settings.guardrails_enabled)
+        out_res = out_guard.validate(full_answer)
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        primary = getattr(llm_router, "primary_provider", None)
+        provider_name = getattr(primary, "name", "llm")
+        model_name = getattr(primary, "model_name", "model")
+        tokens_in = len(prompt.split())
+        tokens_out = len(stream_tokens)
+
+        meta = {
+            "latency_ms": round(elapsed_ms, 2),
+            "tokens_in": tokens_in,
+            "tokens_out": tokens_out,
+            "provider": provider_name,
+            "model": model_name,
+            "cache_hit": False,
+            "cache_type": "none",
+            "cost_usd": 0.0,
+            "guardrail_passed": out_res.allowed,
+            "groundedness_passed": gate_res.passed,
+            "groundedness_score": gate_res.score,
+            "request_id": req_id,
+            "trace_id": get_current_trace_id(),
+            "span_id": get_current_span_id(),
+        }
+
+        # Cache if valid
+        if gate_res.passed and out_res.allowed:
+            cached_entry = CachedResponse(
+                answer=full_answer,
+                sources=sources,
+                model=model_name,
+                provider=provider_name,
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
+            )
+            await cache.set(payload.question, cached_entry)
+            if semantic_cache is not None:
+                await semantic_cache.set(payload.question, cached_entry)
+
+        yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
+
+    return StreamingResponse(
+        sse_event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )

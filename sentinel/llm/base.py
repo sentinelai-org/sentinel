@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 
@@ -42,3 +43,17 @@ class LLMProvider(ABC):
     ) -> LLMResult:
         """Generate a response from the model."""
         ...
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.2,
+    ) -> AsyncIterator[str]:
+        """Stream tokens from the model. Defaults to single-shot yield."""
+        result = await self.generate(
+            prompt=prompt,
+            system_instruction=system_instruction,
+            temperature=temperature,
+        )
+        yield result.text

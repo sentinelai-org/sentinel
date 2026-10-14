@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 
 from sentinel.llm.base import LLMProvider, LLMResult
 
@@ -56,3 +57,17 @@ class FakeProvider(LLMProvider):
             provider=self.name,
             latency_ms=self._latency_ms,
         )
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.2,
+    ) -> AsyncIterator[str]:
+        self.call_count += 1
+        self.last_prompt = prompt
+        _ = (system_instruction, temperature)
+        words = self._default_response.split(" ")
+        for i, word in enumerate(words):
+            await asyncio.sleep(0.001)
+            yield word + (" " if i < len(words) - 1 else "")

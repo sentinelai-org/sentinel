@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 
 from sentinel.core.errors import ProviderError
 from sentinel.core.logging import get_logger
@@ -140,5 +141,93 @@ class LLMRouter:
             raise ProviderError(
                 f"Primary provider ({self.primary_provider.name}) failed after {self.max_retries} "
                 f"retries, no fallback available: {last_error}",
+                provider=self.primary_provider.name,
+            ) from last_error
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.2,
+    ) -> AsyncIterator[str]:
+        """Stream tokens from primary provider with retries, then fallback if initial call fails."""
+        with tracer.start_as_current_span("llm.route_stream") as route_span:
+            route_span.set_attribute("llm.primary_provider", self.primary_provider.name)
+            route_span.set_attribute(
+                "llm.fallback_provider",
+                self.fallback_provider.name if self.fallback_provider else "none",
+            )
+
+            backoff = self.initial_backoff_seconds
+            last_error: Exception | None = None
+
+            for attempt in range(1, self.max_retries + 1):
+                started = False
+                try:
+                    async for chunk in self.primary_provider.generate_stream(
+                        prompt=prompt,
+                        system_instruction=system_instruction,
+                        temperature=temperature,
+                    ):
+                        started = True
+                        yield chunk
+                    return
+                except Exception as exc:
+                    last_error = exc
+                    if started:
+                        logger.error(
+                            "Primary streaming aborted mid-generation",
+                            extra={"provider": self.primary_provider.name, "error": str(exc)},
+                        )
+                        raise ProviderError(
+                            f"Primary provider failed during streaming: {exc}",
+                            provider=self.primary_provider.name,
+                        ) from exc
+                    logger.warning(
+                        "Primary streaming attempt failed",
+                        extra={
+                            "provider": self.primary_provider.name,
+                            "attempt": attempt,
+                            "error": str(exc),
+                        },
+                    )
+                    if attempt < self.max_retries:
+                        await asyncio.sleep(backoff)
+                        backoff *= self.backoff_multiplier
+
+            # Primary failed before producing any tokens; attempt fallback
+            if self.fallback_provider is not None:
+                route_span.set_attribute("llm.fallback_triggered", True)
+                logger.warning(
+                    "Primary provider stream exhausted retries, switching to fallback",
+                    extra={
+                        "primary": self.primary_provider.name,
+                        "fallback": self.fallback_provider.name,
+                    },
+                )
+                try:
+                    async for chunk in self.fallback_provider.generate_stream(
+                        prompt=prompt,
+                        system_instruction=system_instruction,
+                        temperature=temperature,
+                    ):
+                        yield chunk
+                    return
+                except Exception as fallback_exc:
+                    logger.error(
+                        "Fallback provider stream failed",
+                        extra={
+                            "fallback": self.fallback_provider.name,
+                            "error": str(fallback_exc),
+                        },
+                    )
+                    raise ProviderError(
+                        f"Both primary ({self.primary_provider.name}) and fallback "
+                        f"({self.fallback_provider.name}) stream failed: {fallback_exc}",
+                        provider="router",
+                    ) from fallback_exc
+
+            raise ProviderError(
+                f"Primary stream failed after {self.max_retries} retries: {last_error}",
                 provider=self.primary_provider.name,
             ) from last_error

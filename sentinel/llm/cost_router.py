@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import AsyncIterator
 from typing import ClassVar
 
 from sentinel.core.logging import get_logger
@@ -136,3 +137,52 @@ class CostAwareRouter(LLMRouter):
             cost = calculate_cost_usd(result.model, result.tokens_in, result.tokens_out)
             span.set_attribute("llm.cost_usd", cost)
             return result, cost, complexity
+
+    async def route_and_stream(
+        self,
+        prompt: str,
+        question: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.2,
+    ) -> AsyncIterator[str]:
+        """Route to appropriate model tier based on query complexity and stream tokens."""
+        complexity = "complex" if ComplexityClassifier.is_complex(question) else "simple"
+
+        with tracer.start_as_current_span("llm.cost_router_stream") as span:
+            span.set_attribute("llm.complexity", complexity)
+            span.set_attribute("llm.cost_routing_enabled", self.cost_routing_enabled)
+
+            # Try economy provider for simple queries if configured
+            if self.cost_routing_enabled and complexity == "simple" and self.economy_provider:
+                span.set_attribute("llm.selected_tier", "economy")
+                started = False
+                try:
+                    logger.info(
+                        "Streaming simple query with economy provider",
+                        extra={"provider": self.economy_provider.name},
+                    )
+                    async for chunk in self.economy_provider.generate_stream(
+                        prompt,
+                        system_instruction=system_instruction,
+                        temperature=temperature,
+                    ):
+                        started = True
+                        yield chunk
+                    return
+                except Exception as exc:
+                    if started:
+                        raise
+                    logger.warning(
+                        "Economy provider stream failed, falling back to primary",
+                        extra={"error": str(exc)},
+                    )
+                    span.record_exception(exc)
+
+            # Otherwise use primary router with fallback
+            span.set_attribute("llm.selected_tier", "primary")
+            async for chunk in self.generate_stream(
+                prompt,
+                system_instruction=system_instruction,
+                temperature=temperature,
+            ):
+                yield chunk

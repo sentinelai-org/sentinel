@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import AsyncIterator
 from typing import Any
 
 from google import genai
@@ -91,5 +92,42 @@ class GeminiProvider(LLMProvider):
 
             raise ProviderError(
                 f"Gemini generation error: {error_str}",
+                provider=self.name,
+            ) from exc
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.2,
+    ) -> AsyncIterator[str]:
+        config: dict[str, Any] = {"temperature": temperature}
+        if system_instruction:
+            config["system_instruction"] = system_instruction
+
+        generate_config = types.GenerateContentConfig(**config)
+
+        try:
+            stream = await self._client.aio.models.generate_content_stream(
+                model=self._model,
+                contents=prompt,
+                config=generate_config,
+            )
+            async for chunk in stream:
+                if chunk.text:
+                    yield chunk.text
+        except Exception as exc:
+            error_str = str(exc)
+            if (
+                "429" in error_str
+                or "RESOURCE_EXHAUSTED" in error_str
+                or "quota" in error_str.lower()
+            ):
+                raise ProviderRateLimitError(
+                    f"Gemini quota exhausted / rate limit: {error_str}",
+                    provider=self.name,
+                ) from exc
+            raise ProviderError(
+                f"Gemini streaming error: {error_str}",
                 provider=self.name,
             ) from exc

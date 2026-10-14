@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -82,3 +84,43 @@ class ReadyResponse(BaseModel):
     components: dict[str, bool] = Field(
         description="Health status of downstream dependencies (qdrant, redis)"
     )
+
+
+class DocumentInput(BaseModel):
+    """Single document to be ingested asynchronously."""
+
+    content: str = Field(..., min_length=1, description="Raw text content of the document")
+    source: str = Field(default="api_upload", description="Source identifier or file path")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Arbitrary document metadata tags"
+    )
+
+
+class IngestJobRequest(BaseModel):
+    """Payload for submitting an asynchronous ingestion job."""
+
+    documents: list[DocumentInput] = Field(
+        ..., min_length=1, description="List of documents to be chunked and indexed"
+    )
+
+
+class IngestJobResponse(BaseModel):
+    """Response returned immediately after enqueueing an ingestion job."""
+
+    job_id: str = Field(description="Unique job identifier")
+    status: str = Field(default="queued", description="Initial job status")
+    total_documents: int = Field(description="Total number of documents queued")
+    created_at: str = Field(description="ISO 8601 creation timestamp")
+
+
+class IngestJobStatus(BaseModel):
+    """Status details for an asynchronous ingestion job."""
+
+    job_id: str = Field(description="Unique job identifier")
+    status: str = Field(description="Job status: queued, processing, completed, or failed")
+    total_documents: int = Field(description="Total number of documents")
+    processed_documents: int = Field(description="Number of processed documents")
+    progress_percent: float = Field(description="Progress percentage (0.0 to 100.0)")
+    created_at: str | None = Field(default=None, description="ISO timestamp when created")
+    completed_at: str | None = Field(default=None, description="ISO timestamp when finished")
+    error: str | None = Field(default=None, description="Error message if job failed")

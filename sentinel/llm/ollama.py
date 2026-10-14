@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import time
+from collections.abc import AsyncIterator
 
 import httpx
 
@@ -83,5 +85,44 @@ class OllamaProvider(LLMProvider):
             )
             raise ProviderError(
                 f"Ollama generation failed: {exc}",
+                provider=self.name,
+            ) from exc
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.2,
+    ) -> AsyncIterator[str]:
+        payload = {
+            "model": self._model,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "temperature": temperature,
+            },
+        }
+        if system_instruction:
+            payload["system"] = system_instruction
+
+        endpoint = f"{self._base_url}/api/generate"
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout_seconds) as client:
+                async with client.stream("POST", endpoint, json=payload) as response:
+                    response.raise_for_status()
+                    async for line in response.aiter_lines():
+                        if line:
+                            data = json.loads(line)
+                            chunk = data.get("response", "")
+                            if chunk:
+                                yield chunk
+        except Exception as exc:
+            logger.warning(
+                "Ollama streaming failed",
+                extra={"error": str(exc), "model": self._model},
+            )
+            raise ProviderError(
+                f"Ollama streaming failed: {exc}",
                 provider=self.name,
             ) from exc

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -29,6 +30,8 @@ from sentinel.llm.gemini import GeminiProvider
 from sentinel.llm.ollama import OllamaProvider
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.qdrant import QdrantVectorStore
+from sentinel.workers.queue import RedisJobQueue
+from sentinel.workers.worker import IngestWorker
 
 logger = get_logger(__name__)
 
@@ -157,10 +160,39 @@ def build_app(
         )
         app.state.agent_graph = create_agent_graph(node_handler)
 
+        # 7. Background Ingestion Worker & Queue (Phase 5)
+        job_queue = RedisJobQueue(
+            redis_url=current_settings.redis_url,
+            stream_name=current_settings.ingest_stream_name,
+            consumer_group=current_settings.ingest_consumer_group,
+        )
+        app.state.job_queue = job_queue
+        try:
+            await job_queue.initialize_consumer_group()
+        except Exception as exc:
+            logger.warning(
+                "Could not initialize Redis consumer group at startup", extra={"error": str(exc)}
+            )
+
+        ingest_worker = IngestWorker(
+            queue=job_queue,
+            vector_store=vector_store,
+            embedder=embedder,
+        )
+        app.state.ingest_worker = ingest_worker
+        worker_task = asyncio.create_task(ingest_worker.run_loop())
+
         yield
 
         # Graceful Shutdown
         logger.info("Shutting down Sentinel services")
+        ingest_worker.stop()
+        worker_task.cancel()
+        try:
+            await worker_task
+        except asyncio.CancelledError:
+            pass
+        await job_queue.close()
         await cache.close()
         await vector_store.close()
         await semantic_vector_store.close()
