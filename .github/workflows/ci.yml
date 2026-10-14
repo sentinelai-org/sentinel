@@ -70,4 +70,3 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           trivy image --exit-code 0 --ignore-unfixed --vuln-type os,library --severity CRITICAL,HIGH sentinel:latest
-
