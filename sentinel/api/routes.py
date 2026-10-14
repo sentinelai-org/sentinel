@@ -41,6 +41,21 @@ def get_agent_graph(request: Request) -> Any:
     return request.app.state.agent_graph
 
 
+@router.get("/", tags=["Info"])
+async def root() -> dict[str, Any]:
+    """Root metadata endpoint with links to documentation and health probes."""
+    return {
+        "service": "Sentinel LLMOps Gateway",
+        "version": "0.1.0",
+        "status": "running",
+        "docs_url": "/docs",
+        "health_url": "/healthz",
+        "ready_url": "/readyz",
+        "chat_url": "/v1/chat",
+        "tracing_ui": "http://localhost:16686",
+    }
+
+
 @router.get("/healthz", response_model=HealthResponse, tags=["Health"])
 async def healthz() -> HealthResponse:
     """Liveness probe returning 200 OK if service process is running."""

@@ -68,6 +68,11 @@ async def test_chat_integration_e2e(
     async with httpx.AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as client:
+        # 0. Root endpoint
+        resp_root = await client.get("/")
+        assert resp_root.status_code == 200
+        assert resp_root.json()["service"] == "Sentinel LLMOps Gateway"
+
         # 1. Health check
         resp_health = await client.get("/healthz")
         assert resp_health.status_code == 200
