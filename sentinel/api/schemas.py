@@ -44,6 +44,12 @@ class ChatMetadata(BaseModel):
     span_id: str | None = Field(
         default=None, description="OpenTelemetry 16-hex span ID for distributed tracing"
     )
+    groundedness_score: float | None = Field(
+        default=None, description="Calculated factual groundedness verification score"
+    )
+    groundedness_passed: bool = Field(
+        default=True, description="Whether the response passed runtime Groundedness Gate"
+    )
 
 
 class ChatResponse(BaseModel):

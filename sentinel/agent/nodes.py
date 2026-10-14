@@ -7,6 +7,7 @@ from typing import Any
 from sentinel.agent.state import AgentState
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_tracer
+from sentinel.evals.gate import SAFE_UNVERIFIED_REFUSAL, GroundednessGate
 from sentinel.llm.router import LLMRouter
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.vector_store import VectorStore
@@ -30,12 +31,14 @@ class AgentNodeHandler:
         llm_router: LLMRouter,
         score_threshold: float = 0.45,
         top_k: int = 4,
+        groundedness_gate: GroundednessGate | None = None,
     ) -> None:
         self.vector_store = vector_store
         self.embedder = embedder
         self.llm_router = llm_router
         self.score_threshold = score_threshold
         self.top_k = top_k
+        self.groundedness_gate = groundedness_gate or GroundednessGate(threshold=0.70)
 
     async def retrieve(self, state: AgentState) -> dict[str, Any]:
         """Retrieve relevant context chunks from vector store."""
@@ -150,6 +153,38 @@ class AgentNodeHandler:
                 "meta": meta,
             }
 
+    async def validate_groundedness(self, state: AgentState) -> dict[str, Any]:
+        """Validate generated answer against retrieved context using GroundednessGate."""
+        answer = state.get("answer", "")
+        documents = state.get("documents", [])
+        context_texts = [str(d.get("text", "")) for d in documents]
+
+        with tracer.start_as_current_span("agent.validate_groundedness") as span:
+            gate_result = self.groundedness_gate.evaluate(
+                answer=answer,
+                context_chunks=context_texts,
+            )
+
+            span.set_attribute("groundedness.score", gate_result.score)
+            span.set_attribute("groundedness.passed", gate_result.passed)
+
+            final_answer = answer if gate_result.passed else SAFE_UNVERIFIED_REFUSAL
+
+            meta = state.get("meta", {})
+            meta.update(
+                {
+                    "groundedness_score": gate_result.score,
+                    "groundedness_passed": gate_result.passed,
+                }
+            )
+
+            return {
+                "answer": final_answer,
+                "groundedness_score": gate_result.score,
+                "groundedness_passed": gate_result.passed,
+                "meta": meta,
+            }
+
     async def no_context_answer(self, state: AgentState) -> dict[str, Any]:
         """Deterministic response when context is irrelevant to prevent hallucination."""
         with tracer.start_as_current_span("agent.no_context_answer") as span:
@@ -163,6 +198,8 @@ class AgentNodeHandler:
                     "provider": "system",
                     "model": "none",
                     "llm_latency_ms": 0.0,
+                    "groundedness_score": 1.0,
+                    "groundedness_passed": True,
                 }
             )
             return {
@@ -170,6 +207,8 @@ class AgentNodeHandler:
                     "I could not find sufficient relevant documentation in the knowledge base "
                     "to answer your question. Please ensure the topic is covered in the documentation."
                 ),
+                "groundedness_score": 1.0,
+                "groundedness_passed": True,
                 "meta": meta,
             }
 

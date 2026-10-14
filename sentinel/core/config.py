@@ -76,6 +76,14 @@ class Settings(BaseSettings):
         description="OTLP HTTP collector endpoint for traces (e.g. Jaeger or Phoenix)",
     )
 
+    # Automated Evaluations & Groundedness Gate (Phase 3)
+    groundedness_threshold: float = Field(
+        default=0.70, description="Minimum groundedness score for runtime gate verification"
+    )
+    groundedness_gate_enabled: bool = Field(
+        default=True, description="Enable runtime Groundedness Gate verification"
+    )
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

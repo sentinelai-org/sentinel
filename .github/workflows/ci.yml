@@ -32,7 +32,7 @@ jobs:
         run: ruff format --check .
 
       - name: Run Mypy Typecheck
-        run: mypy sentinel tests
+        run: mypy sentinel tests scripts
 
   unit-and-integration-tests:
     name: Automated Tests

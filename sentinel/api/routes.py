@@ -143,6 +143,8 @@ async def chat(
         "answer": "",
         "sources": [],
         "meta": {},
+        "groundedness_score": None,
+        "groundedness_passed": True,
     }
 
     graph_output = await agent_graph.ainvoke(initial_state)
@@ -162,6 +164,8 @@ async def chat(
         request_id=req_id,
         trace_id=get_current_trace_id(),
         span_id=get_current_span_id(),
+        groundedness_score=meta_info.get("groundedness_score"),
+        groundedness_passed=meta_info.get("groundedness_passed", True),
     )
 
     # Step 3: Populate cache if context was grounded and an answer was produced
