@@ -66,12 +66,8 @@ jobs:
         run: |
           docker build -t sentinel:latest .
 
-      - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@v0.28.0
-        with:
-          image-ref: "sentinel:latest"
-          format: "table"
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+      - name: Install & Run Trivy Vulnerability Scanner
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy image --exit-code 0 --ignore-unfixed --vuln-type os,library --severity CRITICAL,HIGH sentinel:latest
+
