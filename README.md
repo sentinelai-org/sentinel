@@ -125,6 +125,9 @@ Sample JSON response:
     "provider": "gemini",
     "model": "gemini-2.5-flash",
     "cache_hit": false,
+    "cache_type": "none",
+    "cost_usd": 0.000037,
+    "guardrail_passed": true,
     "request_id": "req_8a39f1c7e90b",
     "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
     "span_id": "00f067aa0ba902b7",
@@ -166,8 +169,8 @@ python scripts/evaluate.py --dataset data/evals/golden_dataset.json
   - OpenTelemetry auto-instrumentation, trace context propagation across LLM and vector steps, export to Jaeger / Phoenix / Langfuse.
 - [x] **Phase 3: Automated Evaluations & Groundedness Gate**
   - Continuous evaluation harness with RAG Triad metrics (faithfulness, context recall, answer relevance), golden benchmark dataset, runtime Groundedness Gate, and regression gating CLI.
-- [ ] **Phase 4: Safety Guardrails, Semantic Caching & Cost Routing**
-  - Input/output safety validation (NeMo Guardrails / Llama Guard), Qdrant-backed semantic cache with cosine similarity matching, dynamic cost-aware LLM router.
+- [x] **Phase 4: Safety Guardrails, Semantic Caching & Cost Routing**
+  - Input/output safety validation (prompt injection detection, PII masking, system leak guard), Qdrant-backed semantic vector cache with cosine matching, dynamic cost-aware router and token pricing accounting.
 - [ ] **Phase 5: Streaming & Asynchronous Background Tasks**
   - Server-Sent Events (SSE) token streaming for `/v1/chat`, async job queue via Redis Streams / Celery for large ingestion batches.
 - [ ] **Phase 6: GitOps Deployment & Production CI/CD Gate**

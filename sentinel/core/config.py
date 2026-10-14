@@ -84,6 +84,23 @@ class Settings(BaseSettings):
         default=True, description="Enable runtime Groundedness Gate verification"
     )
 
+    # Safety Guardrails, Semantic Cache & Cost Routing (Phase 4)
+    guardrails_enabled: bool = Field(
+        default=True, description="Enable input and output safety guardrails"
+    )
+    semantic_cache_enabled: bool = Field(
+        default=True, description="Enable vector-based semantic response caching"
+    )
+    semantic_cache_threshold: float = Field(
+        default=0.90, description="Cosine similarity threshold for semantic cache hits"
+    )
+    semantic_cache_collection: str = Field(
+        default="sentinel_semantic_cache", description="Qdrant collection for semantic cache"
+    )
+    cost_routing_enabled: bool = Field(
+        default=True, description="Enable complexity-based dynamic cost-aware routing"
+    )
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

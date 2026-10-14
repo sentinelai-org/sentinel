@@ -50,6 +50,13 @@ class ChatMetadata(BaseModel):
     groundedness_passed: bool = Field(
         default=True, description="Whether the response passed runtime Groundedness Gate"
     )
+    cache_type: str | None = Field(
+        default=None, description="Cache mechanism type: exact, semantic, or none"
+    )
+    cost_usd: float | None = Field(default=None, description="Estimated inference cost in USD")
+    guardrail_passed: bool = Field(
+        default=True, description="Whether input and output passed safety guardrails"
+    )
 
 
 class ChatResponse(BaseModel):

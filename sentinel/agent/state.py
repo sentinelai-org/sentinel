@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, TypedDict
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     """Explicit state passed across nodes in the LangGraph workflow."""
 
     question: str
@@ -18,3 +18,6 @@ class AgentState(TypedDict):
     meta: dict[str, Any]
     groundedness_score: float | None
     groundedness_passed: bool
+    guardrail_passed: bool
+    guardrail_violation: str | None
+    cost_usd: float | None

@@ -12,6 +12,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from sentinel.agent.cache import ResponseCache
 from sentinel.agent.graph import create_agent_graph
 from sentinel.agent.nodes import AgentNodeHandler
+from sentinel.agent.semantic_cache import SemanticCache
 from sentinel.api.middleware import RequestContextMiddleware
 from sentinel.api.routes import router
 from sentinel.core.config import Settings, get_settings
@@ -19,11 +20,13 @@ from sentinel.core.errors import SentinelError
 from sentinel.core.logging import get_logger, setup_logging
 from sentinel.core.telemetry import setup_telemetry, shutdown_telemetry
 from sentinel.evals.gate import GroundednessGate
+from sentinel.guardrails.input import InputGuardrail
+from sentinel.guardrails.output import OutputGuardrail
 from sentinel.llm.base import LLMProvider
+from sentinel.llm.cost_router import CostAwareRouter
 from sentinel.llm.fake import FakeProvider
 from sentinel.llm.gemini import GeminiProvider
 from sentinel.llm.ollama import OllamaProvider
-from sentinel.llm.router import LLMRouter
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.qdrant import QdrantVectorStore
 
@@ -77,7 +80,7 @@ def build_app(
         embedder = LocalEmbedder(model_name=current_settings.embedding_model)
         app.state.embedder = embedder
 
-        # 4. LLM Providers & Router
+        # 4. LLM Providers & Cost Router (Phase 4)
         if override_primary_llm is not None:
             primary_llm = override_primary_llm
         elif (
@@ -109,21 +112,48 @@ def build_app(
                 timeout_seconds=current_settings.ollama_timeout_seconds,
             )
 
-        router_instance = LLMRouter(
+        cost_router = CostAwareRouter(
             primary_provider=primary_llm,
             fallback_provider=fallback_llm,
+            economy_provider=fallback_llm,
+            cost_routing_enabled=current_settings.cost_routing_enabled,
         )
-        app.state.llm_router = router_instance
+        app.state.llm_router = cost_router
 
-        # 5. LangGraph Agent compilation with Groundedness Gate (Phase 3)
+        # 5. Semantic Cache (Phase 4)
+        semantic_vector_store = QdrantVectorStore(
+            url=current_settings.qdrant_url,
+            collection_name=current_settings.semantic_cache_collection,
+            vector_size=384,
+        )
+        semantic_cache = SemanticCache(
+            vector_store=semantic_vector_store,
+            embedder=embedder,
+            similarity_threshold=current_settings.semantic_cache_threshold,
+            enabled=current_settings.semantic_cache_enabled,
+        )
+        app.state.semantic_cache = semantic_cache
+        try:
+            await semantic_cache.initialize()
+        except Exception as exc:
+            logger.warning(
+                "Could not pre-initialize Semantic Cache collection", extra={"error": str(exc)}
+            )
+
+        # 6. Safety Guardrails & Groundedness Gate (Phases 3 & 4)
         gate = GroundednessGate(threshold=current_settings.groundedness_threshold)
+        input_guardrail = InputGuardrail(enabled=current_settings.guardrails_enabled)
+        output_guardrail = OutputGuardrail(enabled=current_settings.guardrails_enabled)
+
         node_handler = AgentNodeHandler(
             vector_store=vector_store,
             embedder=embedder,
-            llm_router=router_instance,
+            llm_router=cost_router,
             score_threshold=current_settings.score_threshold,
             top_k=current_settings.retrieval_top_k,
             groundedness_gate=gate,
+            input_guardrail=input_guardrail,
+            output_guardrail=output_guardrail,
         )
         app.state.agent_graph = create_agent_graph(node_handler)
 
@@ -133,6 +163,7 @@ def build_app(
         logger.info("Shutting down Sentinel services")
         await cache.close()
         await vector_store.close()
+        await semantic_vector_store.close()
         shutdown_telemetry()
 
     app = FastAPI(

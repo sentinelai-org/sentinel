@@ -8,6 +8,9 @@ from sentinel.agent.state import AgentState
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_tracer
 from sentinel.evals.gate import SAFE_UNVERIFIED_REFUSAL, GroundednessGate
+from sentinel.guardrails.input import InputGuardrail
+from sentinel.guardrails.output import OutputGuardrail
+from sentinel.llm.cost_router import CostAwareRouter, calculate_cost_usd
 from sentinel.llm.router import LLMRouter
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.vector_store import VectorStore
@@ -32,6 +35,8 @@ class AgentNodeHandler:
         score_threshold: float = 0.45,
         top_k: int = 4,
         groundedness_gate: GroundednessGate | None = None,
+        input_guardrail: InputGuardrail | None = None,
+        output_guardrail: OutputGuardrail | None = None,
     ) -> None:
         self.vector_store = vector_store
         self.embedder = embedder
@@ -39,6 +44,52 @@ class AgentNodeHandler:
         self.score_threshold = score_threshold
         self.top_k = top_k
         self.groundedness_gate = groundedness_gate or GroundednessGate(threshold=0.70)
+        self.input_guardrail = input_guardrail or InputGuardrail(enabled=True)
+        self.output_guardrail = output_guardrail or OutputGuardrail(enabled=True)
+
+    async def guardrail_input(self, state: AgentState) -> dict[str, Any]:
+        """Evaluate incoming question for safety violations and redact PII."""
+        question = state["question"]
+        eval_result = self.input_guardrail.validate(question)
+        if not eval_result.allowed:
+            return {
+                "guardrail_passed": False,
+                "guardrail_violation": (
+                    eval_result.violation_type.value if eval_result.violation_type else "unsafe"
+                ),
+                "answer": f"Sentinel Guardrail: Request blocked for safety ({eval_result.reason}).",
+            }
+        return {
+            "question": eval_result.sanitized_text,
+            "guardrail_passed": True,
+            "guardrail_violation": None,
+        }
+
+    async def refuse_unsafe(self, state: AgentState) -> dict[str, Any]:
+        """Terminal refusal when input fails safety checks."""
+        meta = state.get("meta", {})
+        meta.update(
+            {
+                "tokens_in": 0,
+                "tokens_out": 0,
+                "provider": "guardrail",
+                "model": "safety-filter",
+                "llm_latency_ms": 0.0,
+                "guardrail_passed": False,
+                "cost_usd": 0.0,
+                "groundedness_score": 1.0,
+                "groundedness_passed": True,
+            }
+        )
+        return {
+            "answer": state.get(
+                "answer",
+                "Sentinel Guardrail: Request blocked for safety reasons.",
+            ),
+            "guardrail_passed": False,
+            "cost_usd": 0.0,
+            "meta": meta,
+        }
 
     async def retrieve(self, state: AgentState) -> dict[str, Any]:
         """Retrieve relevant context chunks from vector store."""
@@ -127,15 +178,27 @@ class AgentNodeHandler:
                 f"Answer based only on the above context:"
             )
 
-            result = await self.llm_router.generate(
-                prompt=prompt,
-                system_instruction=SYSTEM_PROMPT,
-            )
+            cost_usd = 0.0
+            complexity = "simple"
+            if isinstance(self.llm_router, CostAwareRouter):
+                result, cost_usd, complexity = await self.llm_router.route_and_generate(
+                    prompt=prompt,
+                    question=question,
+                    system_instruction=SYSTEM_PROMPT,
+                )
+                span.set_attribute("agent.complexity", complexity)
+            else:
+                result = await self.llm_router.generate(
+                    prompt=prompt,
+                    system_instruction=SYSTEM_PROMPT,
+                )
+                cost_usd = calculate_cost_usd(result.model, result.tokens_in, result.tokens_out)
 
             span.set_attribute("gen_ai.system", result.provider)
             span.set_attribute("gen_ai.response.model", result.model)
             span.set_attribute("gen_ai.usage.input_tokens", result.tokens_in)
             span.set_attribute("gen_ai.usage.output_tokens", result.tokens_out)
+            span.set_attribute("gen_ai.usage.cost_usd", cost_usd)
 
             meta = state.get("meta", {})
             meta.update(
@@ -145,11 +208,14 @@ class AgentNodeHandler:
                     "provider": result.provider,
                     "model": result.model,
                     "llm_latency_ms": result.latency_ms,
+                    "cost_usd": cost_usd,
+                    "complexity": complexity,
                 }
             )
 
             return {
                 "answer": result.text,
+                "cost_usd": cost_usd,
                 "meta": meta,
             }
 
@@ -184,6 +250,20 @@ class AgentNodeHandler:
                 "groundedness_passed": gate_result.passed,
                 "meta": meta,
             }
+
+    async def guardrail_output(self, state: AgentState) -> dict[str, Any]:
+        """Validate generated answer for system prompt leaks or unredacted secrets."""
+        answer = state.get("answer", "")
+        eval_result = self.output_guardrail.validate(answer)
+
+        meta = state.get("meta", {})
+        meta.update({"guardrail_passed": eval_result.allowed})
+
+        return {
+            "answer": eval_result.sanitized_text,
+            "guardrail_passed": eval_result.allowed,
+            "meta": meta,
+        }
 
     async def no_context_answer(self, state: AgentState) -> dict[str, Any]:
         """Deterministic response when context is irrelevant to prevent hallucination."""

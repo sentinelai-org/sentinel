@@ -233,18 +233,18 @@ async def test_agent_nodes_tracing_spans(
     )
 
     # 1. Retrieve
-    ret_res = await handler.retrieve({"question": "What is a Pod?"})  # type: ignore[typeddict-item]
+    ret_res = await handler.retrieve({"question": "What is a Pod?"})
     assert len(ret_res["documents"]) == 1
 
     # 2. Grade context
     grade_res = await handler.grade_context(
-        {"question": "What is a Pod?", "documents": ret_res["documents"]}  # type: ignore[typeddict-item]
+        {"question": "What is a Pod?", "documents": ret_res["documents"]}
     )
     assert grade_res["context_relevant"] is True
 
     # 3. Generate
     gen_res = await handler.generate(
-        {  # type: ignore[typeddict-item]
+        {
             "question": "What is a Pod?",
             "documents": grade_res["documents"],
             "meta": {},
@@ -253,7 +253,7 @@ async def test_agent_nodes_tracing_spans(
     assert "smallest unit" in gen_res["answer"]
 
     # 4. No context answer
-    no_ctx_res = await handler.no_context_answer({"question": "Unknown topic"})  # type: ignore[typeddict-item]
+    no_ctx_res = await handler.no_context_answer({"question": "Unknown topic"})
     assert "could not find sufficient" in no_ctx_res["answer"]
 
     # Verify all generated spans

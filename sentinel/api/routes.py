@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
 from sentinel.agent.cache import CachedResponse, ResponseCache
+from sentinel.agent.semantic_cache import SemanticCache
 from sentinel.agent.state import AgentState
 from sentinel.api.schemas import (
     ChatMetadata,
@@ -41,6 +42,11 @@ def get_vector_store(request: Request) -> VectorStore:
 def get_agent_graph(request: Request) -> Any:
     """Dependency provider for compiled LangGraph agent."""
     return request.app.state.agent_graph
+
+
+def get_semantic_cache(request: Request) -> SemanticCache | None:
+    """Dependency provider for vector-based semantic response cache."""
+    return getattr(request.app.state, "semantic_cache", None)
 
 
 @router.get("/ui", response_class=HTMLResponse, tags=["UI"])
@@ -102,18 +108,19 @@ async def chat(
     payload: ChatRequest,
     request: Request,
     cache: ResponseCache = Depends(get_cache),
+    semantic_cache: SemanticCache | None = Depends(get_semantic_cache),
     agent_graph: Any = Depends(get_agent_graph),
 ) -> ChatResponse:
-    """Main chat endpoint fronting the LangGraph RAG agent."""
+    """Main chat endpoint fronting the LangGraph RAG agent with multi-tier caching and safety guardrails."""
     req_id = getattr(request.state, "request_id", "req_unknown")
     start_time = getattr(request.state, "start_time", time.perf_counter())
 
-    # Step 1: Check Redis exact-match cache
+    # Step 1: Check L1 Redis exact-match cache
     cached = await cache.get(payload.question)
     if cached is not None:
         elapsed_ms = (time.perf_counter() - start_time) * 1000
         logger.info(
-            "Cache hit for query",
+            "Exact cache hit for query",
             extra={"question": payload.question, "latency_ms": round(elapsed_ms, 2)},
         )
         return ChatResponse(
@@ -126,13 +133,48 @@ async def chat(
                 provider=cached.provider,
                 model=cached.model,
                 cache_hit=True,
+                cache_type="exact",
+                cost_usd=0.0,
+                guardrail_passed=True,
                 request_id=req_id,
                 trace_id=get_current_trace_id(),
                 span_id=get_current_span_id(),
             ),
         )
 
-    # Step 2: Invoke LangGraph agent on cache miss
+    # Step 2: Check L2 Qdrant semantic vector cache
+    if semantic_cache is not None:
+        sem_cached, sim_score = await semantic_cache.get(payload.question)
+        if sem_cached is not None:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            logger.info(
+                "Semantic cache hit for query",
+                extra={
+                    "question": payload.question,
+                    "similarity": round(sim_score, 4),
+                    "latency_ms": round(elapsed_ms, 2),
+                },
+            )
+            return ChatResponse(
+                answer=sem_cached.answer,
+                sources=[SourceItem(**s) for s in sem_cached.sources],
+                meta=ChatMetadata(
+                    latency_ms=round(elapsed_ms, 2),
+                    tokens_in=sem_cached.tokens_in,
+                    tokens_out=sem_cached.tokens_out,
+                    provider=sem_cached.provider,
+                    model=sem_cached.model,
+                    cache_hit=True,
+                    cache_type="semantic",
+                    cost_usd=0.0,
+                    guardrail_passed=True,
+                    request_id=req_id,
+                    trace_id=get_current_trace_id(),
+                    span_id=get_current_span_id(),
+                ),
+            )
+
+    # Step 3: Invoke LangGraph agent on double cache miss
     logger.info("Cache miss, executing LangGraph agent workflow")
     initial_state: AgentState = {
         "question": payload.question,
@@ -145,6 +187,9 @@ async def chat(
         "meta": {},
         "groundedness_score": None,
         "groundedness_passed": True,
+        "guardrail_passed": True,
+        "guardrail_violation": None,
+        "cost_usd": None,
     }
 
     graph_output = await agent_graph.ainvoke(initial_state)
@@ -153,6 +198,8 @@ async def chat(
     meta_info = graph_output.get("meta", {})
     sources_data = graph_output.get("sources", [])
     answer = graph_output.get("answer", "")
+    cost_usd = meta_info.get("cost_usd", graph_output.get("cost_usd", 0.0))
+    guardrail_passed = meta_info.get("guardrail_passed", graph_output.get("guardrail_passed", True))
 
     meta = ChatMetadata(
         latency_ms=round(elapsed_ms, 2),
@@ -161,6 +208,9 @@ async def chat(
         provider=meta_info.get("provider", "unknown"),
         model=meta_info.get("model", "unknown"),
         cache_hit=False,
+        cache_type="none",
+        cost_usd=cost_usd,
+        guardrail_passed=guardrail_passed,
         request_id=req_id,
         trace_id=get_current_trace_id(),
         span_id=get_current_span_id(),
@@ -168,8 +218,8 @@ async def chat(
         groundedness_passed=meta_info.get("groundedness_passed", True),
     )
 
-    # Step 3: Populate cache if context was grounded and an answer was produced
-    if graph_output.get("context_relevant", False) and answer:
+    # Step 4: Populate both L1 and L2 caches if context was grounded, safe, and answered
+    if graph_output.get("context_relevant", False) and answer and guardrail_passed:
         cached_entry = CachedResponse(
             answer=answer,
             sources=sources_data,
@@ -179,6 +229,8 @@ async def chat(
             tokens_out=meta.tokens_out,
         )
         await cache.set(payload.question, cached_entry)
+        if semantic_cache is not None:
+            await semantic_cache.set(payload.question, cached_entry)
 
     return ChatResponse(
         answer=answer,
