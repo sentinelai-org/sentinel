@@ -1,0 +1,18 @@
+apiVersion: v2
+name: sentinel
+description: Production-grade Helm chart for Sentinel LLMOps Gateway & RAG Agent
+type: application
+version: 0.6.0
+appVersion: "0.6.0"
+keywords:
+  - llmops
+  - rag
+  - agent
+  - ai-gateway
+  - langgraph
+  - qdrant
+  - redis
+home: https://github.com/your-org/sentinel
+maintainers:
+  - name: Sentinel Platform Team
+    email: platform@sentinel.local

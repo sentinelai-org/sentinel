@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel.fullname" . }}-config
+  labels:
+    {{- include "sentinel.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.global.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  GEMINI_MODEL: {{ .Values.config.geminiModel | quote }}
+  EMBEDDING_MODEL: {{ .Values.config.embeddingModel | quote }}
+  COST_ROUTING_ENABLED: {{ .Values.config.costRoutingEnabled | quote }}
+  GUARDRAILS_ENABLED: {{ .Values.config.guardrailsEnabled | quote }}
+  GROUNDEDNESS_GATE_ENABLED: {{ .Values.config.groundednessGateEnabled | quote }}
+  GROUNDEDNESS_THRESHOLD: {{ .Values.config.groundednessThreshold | quote }}
+  SEMANTIC_CACHE_ENABLED: {{ .Values.config.semanticCacheEnabled | quote }}
+  SEMANTIC_CACHE_THRESHOLD: {{ .Values.config.semanticCacheThreshold | quote }}
+  REDIS_URL: {{ .Values.redis.url | quote }}
+  QDRANT_URL: {{ .Values.qdrant.url | quote }}
+  OTEL_ENABLED: {{ .Values.config.otelEnabled | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.config.otelServiceName | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.config.otelExporterEndpoint | quote }}

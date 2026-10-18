@@ -1,0 +1,140 @@
+# Default values for Sentinel LLMOps Gateway & RAG platform.
+
+global:
+  environment: production
+
+image:
+  repository: sentinel
+  pullPolicy: IfNotPresent
+  tag: "0.6.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/healthz"
+
+podLabels:
+  app.kubernetes.io/part-of: sentinel-platform
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# API Gateway Configuration
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off" # Required for SSE streaming
+  hosts:
+    - host: sentinel.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 75
+  targetMemoryUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+# Background Ingest Worker Configuration
+worker:
+  enabled: true
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1.5Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# Application Settings & Configuration
+config:
+  logLevel: "INFO"
+  geminiModel: "gemini-3.8-flash"
+  embeddingModel: "BAAI/bge-small-en-v1.5"
+  costRoutingEnabled: false
+  guardrailsEnabled: true
+  groundednessGateEnabled: true
+  groundednessThreshold: "0.70"
+  semanticCacheEnabled: true
+  semanticCacheThreshold: "0.90"
+  otelEnabled: true
+  otelServiceName: "sentinel-gateway"
+  otelExporterEndpoint: "http://sentinel-jaeger:4318/v1/traces"
+
+# External / Internal Service Endpoints
+redis:
+  deployEmbedded: true
+  url: "redis://sentinel-redis:6379/0"
+  image: "redis:7-alpine"
+  port: 6379
+
+qdrant:
+  deployEmbedded: true
+  url: "http://sentinel-qdrant:6333"
+  image: "qdrant/qdrant:v1.11.3"
+  httpPort: 6333
+  grpcPort: 6334
+
+# Secrets (Can be passed via CI/CD or SealedSecrets/ExternalSecrets)
+secrets:
+  geminiApiKey: "" # Set via --set secrets.geminiApiKey="AQ..." or external secret

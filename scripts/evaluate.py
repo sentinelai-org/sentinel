@@ -25,6 +25,7 @@ async def run_evaluation(
     dataset_path: Path,
     min_groundedness: float = 0.70,
     judge_type: str = "heuristic",
+    offline: bool = False,
     output_json: Path | None = None,
     output_md: Path | None = None,
 ) -> bool:
@@ -36,6 +37,7 @@ async def run_evaluation(
     print("==================================================", flush=True)
     print(f"Dataset:            {dataset_path}", flush=True)
     print(f"Judge Type:         {judge_type}", flush=True)
+    print(f"Mode:               {'Offline (0-cost mock)' if offline else 'Live'}", flush=True)
     print(f"Target Groundedness: >= {min_groundedness * 100:.1f}%\n", flush=True)
 
     # 1. Initialize RAG dependencies
@@ -52,7 +54,7 @@ async def run_evaluation(
 
     # LLM Router
     primary_llm: LLMProvider
-    if settings.gemini_api_key and settings.gemini_api_key != "your_gemini_api_key_here":
+    if not offline and settings.gemini_api_key and settings.gemini_api_key != "your_gemini_api_key_here":
         primary_llm = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
     else:
         # High-fidelity mock provider matching golden dataset for zero-cost offline evaluations
@@ -200,6 +202,12 @@ def main() -> None:
         default=Path("data/evals/reports/eval_summary.md"),
         help="Path to save Markdown evaluation summary",
     )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        default=False,
+        help="Force zero-cost offline benchmark mock mode even if API key is present",
+    )
     args = parser.parse_args()
 
     passed = asyncio.run(
@@ -207,6 +215,7 @@ def main() -> None:
             dataset_path=args.dataset,
             min_groundedness=args.min_groundedness,
             judge_type=args.judge,
+            offline=args.offline,
             output_json=args.output_json,
             output_md=args.output_md,
         )

@@ -1,0 +1,103 @@
+name: Performance & Quality CI/CD Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  helm-validation:
+    name: Helm Chart Lint & Template Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Lint Sentinel Helm Chart
+        run: helm lint deploy/helm/sentinel
+
+      - name: Dry-run Template Rendering
+        run: helm template sentinel deploy/helm/sentinel --values deploy/helm/sentinel/values.yaml
+
+  evaluation-gate:
+    name: Groundedness & Performance Gate (0-Cost Offline)
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+      qdrant:
+        image: qdrant/qdrant:v1.11.3
+        ports:
+          - 6333:6333
+        options: >-
+          --health-cmd "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && echo -e \"GET /healthz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && cat <&3 | grep 200' || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Pre-populate Qdrant Vector Store
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          COST_ROUTING_ENABLED: "false"
+        run: |
+          python scripts/ingest.py --docs-dir data/docs
+
+      - name: Run Groundedness Quality Gate & Evaluation Benchmark
+        id: eval_gate
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          QDRANT_URL: http://localhost:6333
+          COST_ROUTING_ENABLED: "false"
+          GROUNDEDNESS_THRESHOLD: "0.70"
+        run: |
+          mkdir -p data/evals/reports
+          python scripts/evaluate.py \
+            --dataset data/evals/golden_dataset.json \
+            --min-groundedness 0.70 \
+            --judge heuristic \
+            --output-md data/evals/reports/eval_summary.md \
+            --output-json data/evals/reports/eval_report.json
+
+      - name: Publish Evaluation Summary to Job Summary
+        if: always()
+        run: |
+          if [ -f data/evals/reports/eval_summary.md ]; then
+            cat data/evals/reports/eval_summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Evaluation Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-eval-reports
+          path: data/evals/reports/

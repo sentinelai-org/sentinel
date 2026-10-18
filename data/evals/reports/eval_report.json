@@ -27,7 +27,7 @@
       "expected_sources": [
         "pods.md"
       ],
-      "latency_ms": 14193.88
+      "latency_ms": 17653.0
     },
     {
       "sample_id": "eval_002",
@@ -49,7 +49,7 @@
       "expected_sources": [
         "deployments.md"
       ],
-      "latency_ms": 29.66
+      "latency_ms": 44.05
     },
     {
       "sample_id": "eval_003",
@@ -71,7 +71,7 @@
       "expected_sources": [
         "services.md"
       ],
-      "latency_ms": 32.52
+      "latency_ms": 56.16
     },
     {
       "sample_id": "eval_004",
@@ -93,7 +93,7 @@
       "expected_sources": [
         "architecture.md"
       ],
-      "latency_ms": 34.91
+      "latency_ms": 84.11
     },
     {
       "sample_id": "eval_005",
@@ -109,13 +109,13 @@
       "retrieved_sources": [
         "architecture.md",
         "architecture.md",
-        "pods.md",
-        "services.md"
+        "custom_security_policy.md",
+        "pods.md"
       ],
       "expected_sources": [
         "architecture.md"
       ],
-      "latency_ms": 30.89
+      "latency_ms": 79.94
     },
     {
       "sample_id": "eval_006",
@@ -135,7 +135,7 @@
         "services.md"
       ],
       "expected_sources": [],
-      "latency_ms": 27.88
+      "latency_ms": 61.94
     },
     {
       "sample_id": "eval_007",
@@ -157,7 +157,7 @@
       "expected_sources": [
         "services.md"
       ],
-      "latency_ms": 29.72
+      "latency_ms": 79.32
     },
     {
       "sample_id": "eval_008",
@@ -179,8 +179,8 @@
       "expected_sources": [
         "deployments.md"
       ],
-      "latency_ms": 54.42
+      "latency_ms": 36.3
     }
   ],
-  "timestamp": "2026-10-14T07:44:27.483720+00:00"
+  "timestamp": "2026-10-18T20:19:06.889670+00:00"
 }

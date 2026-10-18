@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test test-unit test-integration ingest up down clean help
+.PHONY: install lint format typecheck test test-unit test-integration ingest up down clean help kind-up kind-down helm-lint helm-template helm-install eval-gate
 
 help:
 	@echo "Available commands:"
@@ -10,6 +10,12 @@ help:
 	@echo "  make ingest          Ingest Markdown documentation into Qdrant"
 	@echo "  make up              Start core services via Docker Compose"
 	@echo "  make down            Stop running containers"
+	@echo "  make kind-up         Create local multi-node Kind Kubernetes cluster"
+	@echo "  make kind-down       Delete local Kind cluster"
+	@echo "  make helm-lint       Lint Sentinel Helm chart"
+	@echo "  make helm-template   Dry-run render Sentinel Helm manifests"
+	@echo "  make helm-install    Install/upgrade Sentinel via Helm on Kubernetes"
+	@echo "  make eval-gate       Run Groundedness Quality Gate evaluation benchmark"
 	@echo "  make clean           Remove temporary cache files"
 
 install:
@@ -43,6 +49,24 @@ up:
 
 down:
 	docker compose down
+
+kind-up:
+	kind create cluster --config deploy/kind/kind-cluster.yaml
+
+kind-down:
+	kind delete cluster --name sentinel-cluster
+
+helm-lint:
+	helm lint deploy/helm/sentinel
+
+helm-template:
+	helm template sentinel deploy/helm/sentinel
+
+helm-install:
+	helm upgrade --install sentinel deploy/helm/sentinel --namespace sentinel --create-namespace
+
+eval-gate:
+	python scripts/evaluate.py --dataset data/evals/golden_dataset.json --min-groundedness 0.70 --offline
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

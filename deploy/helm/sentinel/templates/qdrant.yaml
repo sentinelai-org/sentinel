@@ -1,0 +1,57 @@
+{{- if .Values.qdrant.deployEmbedded }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-qdrant
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: vector-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qdrant
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: qdrant
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: vector-db
+    spec:
+      containers:
+        - name: qdrant
+          image: {{ .Values.qdrant.image | quote }}
+          ports:
+            - containerPort: {{ .Values.qdrant.httpPort }}
+              name: http
+            - containerPort: {{ .Values.qdrant.grpcPort }}
+              name: grpc
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-qdrant
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  ports:
+    - port: {{ .Values.qdrant.httpPort }}
+      targetPort: {{ .Values.qdrant.httpPort }}
+      name: http
+    - port: {{ .Values.qdrant.grpcPort }}
+      targetPort: {{ .Values.qdrant.grpcPort }}
+      name: grpc
+  selector:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

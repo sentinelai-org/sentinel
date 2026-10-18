@@ -174,6 +174,32 @@ python scripts/evaluate.py --dataset data/evals/golden_dataset.json
 
 ---
 
+## Kubernetes & GitOps Deployment (Phase 6)
+
+### 1. Boot Local Multi-Node Kind Cluster
+```bash
+make kind-up
+```
+
+### 2. Lint and Install via Helm
+```bash
+# Validate chart syntax
+make helm-lint
+
+# Install Sentinel into the sentinel namespace
+make helm-install
+```
+
+### 3. Automated GitOps with Argo CD
+Deploy the declarative application manifest into your cluster's Argo CD controller:
+```bash
+kubectl apply -f deploy/argocd/project.yaml
+kubectl apply -f deploy/argocd/application.yaml
+```
+Argo CD will automatically sync manifests from `deploy/helm/sentinel` and apply self-healing policies.
+
+---
+
 ## Engineering Roadmap (Phases 2 – 7)
 
 - [x] **Phase 1: Resilient RAG Gateway Foundation**
@@ -186,7 +212,7 @@ python scripts/evaluate.py --dataset data/evals/golden_dataset.json
   - Input/output safety validation (prompt injection detection, PII masking, system leak guard), Qdrant-backed semantic vector cache with cosine matching, dynamic cost-aware router and token pricing accounting.
 - [x] **Phase 5: Streaming & Asynchronous Background Tasks**
   - Real-time Server-Sent Events (SSE) token streaming (`POST /v1/chat/stream`), background document ingestion job queue via Redis Streams (`sentinel:stream:ingest_jobs`), resilient consumer worker (`sentinel.workers.worker`), and modern interactive Web UI.
-- [ ] **Phase 6: GitOps Deployment & Production CI/CD Gate**
-  - Local Kubernetes cluster via `kind`, Helm charts, automated Argo CD synchronization, and pull request performance gating.
+- [x] **Phase 6: GitOps Deployment & Production CI/CD Gate**
+  - Local Kubernetes cluster via `kind`, Helm charts (`deploy/helm/sentinel`), automated Argo CD synchronization (`deploy/argocd`), and pull request performance & Groundedness evaluation gating (`.github/workflows/perf-gate.yml`).
 - [ ] **Phase 7: Closed-Loop Feedback & Automated Load Testing**
   - User feedback collection (`/v1/feedback`), automated fine-tuning dataset generation, and load testing suites using Locust / k6.
