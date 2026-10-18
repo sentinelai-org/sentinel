@@ -1,218 +1,317 @@
-# Sentinel: LLMOps Platform for Reliable AI Agents
+# Sentinel
 
-Sentinel is a production-grade LLMOps gateway and agent platform engineered for high reliability, zero-cost resilience, and full operational observability.
+Sentinel is an open-source, resilient LLMOps gateway and RAG service built on FastAPI, LangGraph, Qdrant, and Redis. It sits between client applications and foundation models, ensuring that domain answers are grounded in private documentation, hallucinations are caught before they reach users, and traffic continues flowing even when upstream APIs hit rate limits.
 
 ---
 
-## Architecture (Phase 1)
+## Architecture
+
+Sentinel processes questions through a structured state machine rather than a black-box chain:
 
 ```mermaid
 flowchart TD
-    Client([Client / API Consumer]) -->|POST /v1/chat| Gateway[FastAPI Gateway]
-    Gateway --> ReqID[Request ID & Structured JSON Logger]
-    Gateway --> CacheCheck{Redis Exact-Match Cache}
+    Client([Client / Web UI]) --> Ingress[FastAPI Gateway]
     
-    CacheCheck -->|Cache Hit| ReturnCached[Return Answer + Cached Meta]
-    CacheCheck -->|Cache Miss| LangGraphAgent[LangGraph RAG Agent]
+    Ingress --> Guard[Input Guardrails: Injection & PII]
+    Guard --> Cache{Redis Exact Cache}
     
-    subgraph AgentGraph [LangGraph Workflow]
-        Retrieve[Node: retrieve] --> Grade[Node: grade_context]
-        Grade -->|Score >= Threshold| Generate[Node: generate]
-        Grade -->|No Relevant Chunks| FallbackAnswer[Node: no_context_answer]
-    end
+    Cache -->|Hit| ReturnCache[Return Cached Response <5ms]
+    Cache -->|Miss| SemanticCache{Semantic Cache: Qdrant}
     
-    Retrieve --> VectorStore[(Qdrant Vector DB)]
-    Embeddings[BAAI/bge-small-en-v1.5\nLocal Sentence-Transformers] -.-> Retrieve
+    SemanticCache -->|Cosine >= 0.90| ReturnSemantic[Return Semantic Match]
+    SemanticCache -->|Miss| Retrieve[Retrieve Relevant Chunks: Qdrant]
     
-    subgraph LLMLayer [Resilient LLM Router]
-        Generate --> Router[Provider Router]
-        Router -->|Primary: Exponential Backoff x3| Gemini[Gemini API\ngoogle-genai SDK]
-        Gemini -->|HTTP 429 / Error| Ollama[Local Ollama\nqwen2.5:3b]
-    end
-
-    Generate --> SaveCache[(Redis Cache)]
-    FallbackAnswer --> Finalize[Node: finalize]
-    Generate --> Finalize
-    Finalize --> Response[Formatted Response + Metadata]
-    ReturnCached --> Client
-    Response --> Client
+    Retrieve --> Grade{Context Grading >= 0.45}
+    Grade -->|No match| Refusal[Polite Out-of-Scope Refusal]
+    Grade -->|Match| Route[Cost-Aware Router]
+    
+    Route --> Gemini[Primary: Gemini API]
+    Gemini -.->|HTTP 429 / Outage| Ollama[Fallback: Local Ollama]
+    
+    Gemini --> Gate{Groundedness Gate >= 70%}
+    Ollama --> Gate
+    
+    Gate -->|Failed| Block[Refuse: Ungrounded / Hallucination]
+    Gate -->|Passed| OutputGuard[Output Sanitization]
+    
+    OutputGuard --> Stream[SSE Token Stream / JSON Response]
+    OutputGuard --> SaveCache[(Save to Redis)]
 ```
 
----
-
-## Key Features
-
-- **$0 Operating Cost & Quota Defense**:
-  - Local dense vector embeddings via `BAAI/bge-small-en-v1.5` (sentence-transformers), burning 0 Gemini tokens for search.
-  - Redis exact-match response cache instantly serving repeated queries with 0 latency and 0 quota consumption.
-- **Official Google GenAI SDK**:
-  - Direct integration with Google's modern `google-genai` Python library.
-  - Model name dynamically configured via `GEMINI_MODEL` (e.g. `gemini-2.5-flash`), never hardcoded.
-- **Self-Healing LLM Fallback**:
-  - Exponential backoff retry loop (3 attempts) on upstream 429 / quota exhaustion.
-  - Seamless automatic fallback to local Ollama inference (`qwen2.5:3b`).
-- **Grounded LangGraph State Machine**:
-  - Explicit `ChatState` typed flow (`retrieve` $\rightarrow$ `grade_context` $\rightarrow$ `generate`).
-  - Strict context grading threshold prevents hallucinations by safely returning a polite refusal if retrieved documents are not relevant.
-- **Full Operational Observability**:
-  - Every response includes execution passports: `latency_ms`, `tokens_in`, `tokens_out`, `provider`, `model`, `cache_hit`, and `request_id`.
-  - Structured JSON logs propagating `request_id` across all context boundaries via `contextvars`.
+### Request Flow
+1. **Sanitization & Cache Lookup**: The gateway checks inputs for prompt injection and masks PII. It then queries a Redis exact-match cache (`SHA-256`) followed by a Qdrant semantic cache.
+2. **Retrieval & Context Grading**: If un-cached, local embeddings (`BAAI/bge-small-en-v1.5`) retrieve top matches from Qdrant. A grading node drops low-confidence chunks.
+3. **Resilient Routing**: Queries route to Google Gemini by default. If Gemini returns `429 Too Many Requests` or fails after 3 exponential backoff retries, traffic routes to a local Ollama instance (`qwen2.5:3b`).
+4. **Groundedness Gate**: Before any response leaves the gateway, a runtime evaluator computes token overlap between the answer and retrieved source text. If groundedness is under 70%, Sentinel discards the answer to prevent hallucinations.
+5. **Background Ingestion**: Documents uploaded via `/v1/ingest/jobs` go into a Redis Stream (`sentinel:stream:ingest_jobs`) and are processed asynchronously by worker processes.
 
 ---
 
 ## Quickstart
 
-### Prerequisites
-- Python 3.11+
-- Docker & Docker Compose
-- (Optional) [Google AI Studio API Key](https://aistudio.google.com/)
+### 1. Local Development
 
-### 1. Clone & Configure
+Requires Python 3.11+, Docker (for Redis and Qdrant), and an optional Gemini API key.
+
 ```bash
+# Clone and enter repo
 git clone https://github.com/your-org/sentinel.git
 cd sentinel
 
-# Copy example environment configuration
-cp .env.example .env
-```
-Edit `.env` to provide your `GEMINI_API_KEY` (if omitted, Sentinel runs in simulated mock mode with `FakeProvider`).
+# Set up virtualenv
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1       # On Windows PowerShell
+# source .venv/bin/activate        # On Linux / macOS
 
-### 2. Start Services via Docker Compose
+# Install package in editable mode
+pip install -e ".[dev]"
+
+# Start supporting datastores
+docker compose up -d redis qdrant jaeger
+
+# Configure environment
+cp .env.example .env
+# Set GEMINI_API_KEY in .env
+
+# Start dev server with hot reload
+uvicorn sentinel.main:app --reload --port 8000
+```
+
+The web UI is accessible at `http://localhost:8000/ui` and API documentation at `http://localhost:8000/docs`.
+
+---
+
+### 2. Docker Compose
+
+To run the complete system (API, Worker, Qdrant, Redis, Jaeger) inside containers:
+
 ```bash
 docker compose up -d --build
-```
-This boots:
-- **FastAPI Gateway**: `http://localhost:8000`
-- **Jaeger Tracing Web UI**: `http://localhost:16686`
-- **Qdrant Vector Database**: `http://localhost:6333`
-- **Redis Response Cache**: `localhost:6379`
-- *(Optional)* **Ollama**: Run `docker compose --profile ollama up -d` for local offline LLM fallback.
 
-### 3. Ingest Sample Documentation
-Sentinel ships with sample Kubernetes architecture docs in `./data/docs`:
-```bash
-# Ingest docs into Qdrant
-python scripts/ingest.py --docs-dir data/docs
+# Ingest initial documentation
+docker compose exec api python scripts/ingest.py --docs-dir data/docs
 ```
 
-### 4. Query the Gateway
+Exposed ports:
+* Web UI: `http://localhost:8000/ui`
+* API: `http://localhost:8000`
+* Jaeger UI: `http://localhost:16686`
+* Qdrant: `http://localhost:6333`
+
+---
+
+### 3. Kubernetes (Kind & Helm)
+
+Sentinel includes a production-ready Helm chart (`deploy/helm/sentinel`) and an automated Argo CD application manifest (`deploy/argocd`).
+
 ```bash
-# Check service health
-curl http://localhost:8000/healthz
-curl http://localhost:8000/readyz
+# Create a multi-node local cluster with ingress ports
+make kind-up
 
-# Ask a question (synchronous REST)
-curl -X POST http://localhost:8000/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"question": "How do Kubernetes Deployments roll out updates?"}'
+# Lint and install chart
+make helm-lint
+make helm-install
+```
 
-# Stream answer tokens in real-time (Server-Sent Events)
+To clean up:
+```bash
+make kind-down
+```
+
+---
+
+## API Reference
+
+### Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/v1/chat` | Synchronous chat query returning answer, citations, and metadata. |
+| `POST` | `/v1/chat/stream` | Server-Sent Events (SSE) token stream with citations and final audit meta. |
+| `POST` | `/v1/ingest/jobs` | Enqueue documents into Redis Streams for async indexing. Returns 202. |
+| `GET` | `/v1/ingest/jobs/{id}` | Check ingestion job progress percentage and status. |
+| `GET` | `/healthz` | Liveness probe for container orchestrators. |
+| `GET` | `/readyz` | Readiness probe verifying Redis and Qdrant connections. |
+| `GET` | `/ui` | Full-screen web chat client. |
+
+---
+
+### Examples
+
+#### Stream an answer (SSE)
+```bash
 curl -N -X POST http://localhost:8000/v1/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"question": "How do Kubernetes Deployments roll out updates?"}'
-
-# Submit background document ingestion job (Redis Streams)
-curl -X POST http://localhost:8000/v1/ingest/jobs \
-  -H "Content-Type: application/json" \
-  -d '{"documents": [{"content": "Custom docs text...", "source": "guide.md"}]}'
-
-# Query ingestion job status & progress
-curl http://localhost:8000/v1/ingest/jobs/{job_id}
 ```
 
-Sample JSON response:
+Output events:
+```text
+event: token
+data: {"token": "Deployments "}
+
+event: token
+data: {"token": "use a RollingUpdate strategy..."}
+
+event: sources
+data: [{"source": "deployments.md", "content": "...", "score": 0.84}]
+
+event: done
+data: {"meta": {"latency_ms": 182.4, "model": "gemini-3.8-flash", "groundedness_score": 0.94}}
+```
+
+#### Enqueue a document for background ingestion
+```bash
+curl -X POST http://localhost:8000/v1/ingest/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "documents": [
+      {
+        "source": "policies.md",
+        "content": "All clusters must run non-root containers with read-only root filesystems.",
+        "metadata": {"dept": "security"}
+      }
+    ]
+  }'
+```
+
+Response:
 ```json
 {
-  "answer": "A Deployment provides declarative updates for Pods and ReplicaSets...",
-  "sources": [
-    {
-      "source": "deployments.md",
-      "content": "By default, Kubernetes Deployments use the RollingUpdate strategy...",
-      "score": 0.8412
-    }
-  ],
-  "meta": {
-    "latency_ms": 340.5,
-    "tokens_in": 245,
-    "tokens_out": 62,
-    "provider": "gemini",
-    "model": "gemini-2.5-flash",
-    "cache_hit": false,
-    "cache_type": "none",
-    "cost_usd": 0.000037,
-    "guardrail_passed": true,
-    "request_id": "req_8a39f1c7e90b",
-    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "span_id": "00f067aa0ba902b7",
-    "groundedness_score": 0.9412,
-    "groundedness_passed": true
-  }
+  "job_id": "job_ad90fa70e9fa",
+  "status": "queued",
+  "total_documents": 1,
+  "created_at": "2026-10-18T20:03:37.696545+00:00"
 }
 ```
 
 ---
 
-## Local Development & Testing
+## Evaluation and Quality Gate
+
+Sentinel uses a local benchmark runner to measure RAG quality against a golden dataset (`data/evals/golden_dataset.json`). It tests three core metrics (the RAG Triad):
+* **Context Recall**: Did retrieval fetch the documents needed to answer the question?
+* **Groundedness**: Is every factual claim in the answer supported by retrieved chunks?
+* **Answer Relevance**: Did the model actually answer what was asked?
 
 ```bash
-# Install dependencies
-pip install -e ".[dev]"
+# Run the benchmark offline (0 cost, uses deterministic mock provider)
+make eval-gate
+```
 
-# Run linter & code format checks
-ruff check .
-ruff format --check .
+Sample output:
+```text
+==================================================
+  Sentinel RAG Automated Quality & Groundedness Gate
+==================================================
+Dataset:            data/evals/golden_dataset.json
+Target Groundedness: >= 70.0%
 
-# Run type checking
-mypy sentinel tests scripts
+Benchmark Summary:
+  * Total Samples:              8
+  * Mean Groundedness:          75.0%
+  * Mean Context Recall:        100.0%
+  * Gate Pass Rate:             75.0%
+  * Unanswerable Refusal Rate:  100.0%
 
-# Run unit & integration tests (runs 100% locally with 0 Gemini quota burned)
-pytest -v
+Final Verdict: >>> PASSED (Quality Gate OK) <<<
+```
 
-# Run automated evaluation benchmark & Groundedness Gate (0-cost offline mode)
-python scripts/evaluate.py --dataset data/evals/golden_dataset.json
+The GitHub Actions workflow (`.github/workflows/perf-gate.yml`) runs this gate on every pull request. If groundedness regresses below 70%, the build fails and blocks the PR.
+
+---
+
+## Configuration
+
+Configuration values are read from `.env` or system environment variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ENVIRONMENT` | `development` | App environment (`development`, `staging`, `production`). |
+| `LOG_LEVEL` | `INFO` | Output log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`). |
+| `HOST` | `0.0.0.0` | API bind address. |
+| `PORT` | `8000` | API bind port. |
+| `GEMINI_API_KEY` | `""` | Google AI Studio or Vertex API key. Falls back to mock if blank. |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Primary Gemini model identifier. |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint for local Ollama fallback. |
+| `OLLAMA_MODEL` | `qwen2.5:3b` | Local fallback model name. |
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant vector database URL. |
+| `QDRANT_COLLECTION` | `sentinel_docs` | Qdrant collection for document storage. |
+| `EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | Dense local embeddings model (runs on CPU). |
+| `REDIS_URL` | `redis://localhost:6379/0` | Redis instance for cache and job streams. |
+| `CACHE_ENABLED` | `true` | Toggles exact match cache. |
+| `CACHE_TTL_SECONDS` | `3600` | TTL for exact match entries. |
+| `SEMANTIC_CACHE_ENABLED`| `true` | Toggles semantic cosine cache. |
+| `SEMANTIC_CACHE_THRESHOLD` | `0.90` | Cosine similarity threshold for semantic cache hits. |
+| `COST_ROUTING_ENABLED` | `false` | Enables complexity classifier to route simple queries to Ollama. |
+| `GUARDRAILS_ENABLED` | `true` | Enables input safety and prompt injection checks. |
+| `GROUNDEDNESS_GATE_ENABLED` | `true` | Enforces minimum factual overlap before returning answers. |
+| `GROUNDEDNESS_THRESHOLD` | `0.70` | Cutoff ratio for groundedness check. |
+| `OTEL_ENABLED` | `true` | Enables OpenTelemetry trace export. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP collector endpoint (Jaeger). |
+
+---
+
+## Makefile Commands
+
+```bash
+make help          # Show all available commands
+make install       # Install project dependencies
+make lint          # Run ruff check and format inspection
+make format        # Format code using ruff
+make typecheck     # Run mypy on source and tests
+make test          # Run pytest test suite
+make ingest        # Ingest files from data/docs into Qdrant
+make eval-gate     # Run offline evaluation benchmark
+make kind-up       # Create local Kind Kubernetes cluster
+make kind-down     # Destroy local Kind cluster
+make helm-lint     # Validate Helm chart syntax
+make helm-install  # Deploy Helm chart locally
+make clean         # Delete cache and build artifacts
 ```
 
 ---
 
-## Kubernetes & GitOps Deployment (Phase 6)
+## Project Structure
 
-### 1. Boot Local Multi-Node Kind Cluster
-```bash
-make kind-up
+```text
+sentinel/
+├── sentinel/
+│   ├── agent/         # LangGraph workflow, context grading, and state
+│   ├── api/           # FastAPI routers, models, middleware, and UI
+│   ├── core/          # Pydantic configuration, structured logging, OpenTelemetry
+│   ├── evals/         # Groundedness gate, RAG Triad metrics, evaluation harness
+│   ├── guardrails/    # Input/output safety filters and PII masking
+│   ├── llm/           # Gemini provider, Ollama provider, cost routing logic
+│   ├── rag/           # Qdrant integration, text chunking, local embeddings
+│   └── workers/       # Redis Streams consumer and async ingestion worker
+├── deploy/
+│   ├── argocd/        # Declarative Argo CD application manifests
+│   ├── helm/sentinel/ # Helm chart (deployments, worker, ingress, HPA)
+│   └── kind/          # Multi-node Kind cluster configuration
+├── scripts/
+│   ├── evaluate.py    # Offline evaluation runner and gate CLI
+│   └── ingest.py      # Batch doc ingestion utility
+├── tests/
+│   ├── unit/          # Unit tests (mocked datastores and LLMs)
+│   └── integration/   # Integration tests
+└── docker-compose.yml # Compose configuration for full local stack
 ```
-
-### 2. Lint and Install via Helm
-```bash
-# Validate chart syntax
-make helm-lint
-
-# Install Sentinel into the sentinel namespace
-make helm-install
-```
-
-### 3. Automated GitOps with Argo CD
-Deploy the declarative application manifest into your cluster's Argo CD controller:
-```bash
-kubectl apply -f deploy/argocd/project.yaml
-kubectl apply -f deploy/argocd/application.yaml
-```
-Argo CD will automatically sync manifests from `deploy/helm/sentinel` and apply self-healing policies.
 
 ---
 
-## Engineering Roadmap (Phases 2 – 7)
+## Roadmap
 
-- [x] **Phase 1: Resilient RAG Gateway Foundation**
-  - FastAPI Gateway, LangGraph agent, Qdrant vector store, Redis cache, LLM provider fallback, Docker Compose, CI pipeline.
-- [x] **Phase 2: Observability & OpenTelemetry Distributed Tracing**
-  - OpenTelemetry auto-instrumentation, trace context propagation across LLM and vector steps, export to Jaeger / Phoenix / Langfuse.
-- [x] **Phase 3: Automated Evaluations & Groundedness Gate**
-  - Continuous evaluation harness with RAG Triad metrics (faithfulness, context recall, answer relevance), golden benchmark dataset, runtime Groundedness Gate, and regression gating CLI.
-- [x] **Phase 4: Safety Guardrails, Semantic Caching & Cost Routing**
-  - Input/output safety validation (prompt injection detection, PII masking, system leak guard), Qdrant-backed semantic vector cache with cosine matching, dynamic cost-aware router and token pricing accounting.
-- [x] **Phase 5: Streaming & Asynchronous Background Tasks**
-  - Real-time Server-Sent Events (SSE) token streaming (`POST /v1/chat/stream`), background document ingestion job queue via Redis Streams (`sentinel:stream:ingest_jobs`), resilient consumer worker (`sentinel.workers.worker`), and modern interactive Web UI.
-- [x] **Phase 6: GitOps Deployment & Production CI/CD Gate**
-  - Local Kubernetes cluster via `kind`, Helm charts (`deploy/helm/sentinel`), automated Argo CD synchronization (`deploy/argocd`), and pull request performance & Groundedness evaluation gating (`.github/workflows/perf-gate.yml`).
-- [ ] **Phase 7: Closed-Loop Feedback & Automated Load Testing**
-  - User feedback collection (`/v1/feedback`), automated fine-tuning dataset generation, and load testing suites using Locust / k6.
+- [x] **Phase 1**: Core RAG Gateway (FastAPI, LangGraph, Qdrant, Redis, Ollama fallback)
+- [x] **Phase 2**: OpenTelemetry Tracing & Observability (OTLP export to Jaeger)
+- [x] **Phase 3**: Automated Evaluation Harness & Groundedness Gate
+- [x] **Phase 4**: Input/Output Guardrails, Semantic Vector Cache, Cost Router
+- [x] **Phase 5**: Real-Time SSE Token Streaming, Redis Streams Queue, Web UI
+- [x] **Phase 6**: Helm Charts, Local Kind Cluster, Argo CD GitOps, PR Quality Gate
+- [ ] **Phase 7**: User Feedback Collection (`/v1/feedback`) & Automated Load Testing (Locust)
+
+---
+
+## License
+
+MIT
