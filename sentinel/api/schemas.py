@@ -6,6 +6,12 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from sentinel.evals.schemas import (
+    FeedbackRequest,
+    FeedbackResponse,
+    FeedbackStats,
+)
+
 
 class ChatRequest(BaseModel):
     """Payload for POST /v1/chat."""
@@ -125,12 +131,6 @@ class IngestJobStatus(BaseModel):
     completed_at: str | None = Field(default=None, description="ISO timestamp when finished")
     error: str | None = Field(default=None, description="Error message if job failed")
 
-
-from sentinel.evals.schemas import (
-    FeedbackRequest,
-    FeedbackResponse,
-    FeedbackStats,
-)
 
 __all__ = [
     "ChatRequest",
