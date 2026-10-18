@@ -130,9 +130,12 @@ make kind-down
 | `POST` | `/v1/chat/stream` | Server-Sent Events (SSE) token stream with citations and final audit meta. |
 | `POST` | `/v1/ingest/jobs` | Enqueue documents into Redis Streams for async indexing. Returns 202. |
 | `GET` | `/v1/ingest/jobs/{id}` | Check ingestion job progress percentage and status. |
+| `POST` | `/v1/feedback` | Submit user ratings (👍/👎), qualitative comments, and corrections. |
+| `GET` | `/v1/feedback/stats` | Aggregated user satisfaction metrics and rating counts. |
+| `GET` | `/v1/feedback/export` | Export corrected feedback pairs for fine-tuning or DPO alignment. |
 | `GET` | `/healthz` | Liveness probe for container orchestrators. |
 | `GET` | `/readyz` | Readiness probe verifying Redis and Qdrant connections. |
-| `GET` | `/ui` | Full-screen web chat client. |
+| `GET` | `/ui` | Full-screen web chat client with built-in feedback buttons. |
 
 ---
 
@@ -308,7 +311,7 @@ sentinel/
 - [x] **Phase 4**: Input/Output Guardrails, Semantic Vector Cache, Cost Router
 - [x] **Phase 5**: Real-Time SSE Token Streaming, Redis Streams Queue, Web UI
 - [x] **Phase 6**: Helm Charts, Local Kind Cluster, Argo CD GitOps, PR Quality Gate
-- [ ] **Phase 7**: User Feedback Collection (`/v1/feedback`) & Automated Load Testing (Locust)
+- [x] **Phase 7**: Closed-Loop Feedback (`/v1/feedback`), Fine-Tuning & DPO Export (`scripts/export_feedback.py`), Automated Locust Load Testing (`tests/load`)
 
 ---
 

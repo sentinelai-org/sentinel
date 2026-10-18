@@ -458,6 +458,30 @@
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
+        .feedback-actions {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-fb {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .btn-fb:hover {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
         /* Streaming Cursor */
         .cursor {
             display: inline-block;
@@ -932,6 +956,10 @@
                                 <span class="meta-pill">💾 <strong>${m.cache_hit ? m.cache_type : 'Cache Miss'}</strong></span>
                                 <span>•</span>
                                 ${gBadge}
+                                <div class="feedback-actions">
+                                    <button class="btn-fb" onclick="sendFeedback('${m.request_id}', 1, this)" title="Helpful answer">👍</button>
+                                    <button class="btn-fb" onclick="sendFeedback('${m.request_id}', -1, this)" title="Hallucination or unhelpful">👎</button>
+                                </div>
                             `;
                         } else if (eventType === 'error') {
                             const err = JSON.parse(dataStr);
@@ -993,6 +1021,10 @@
                         <span class="meta-pill">💾 <strong>${m.cache_hit ? m.cache_type : 'Cache Miss'}</strong></span>
                         <span>•</span>
                         ${gBadge}
+                        <div class="feedback-actions">
+                            <button class="btn-fb" onclick="sendFeedback('${m.request_id}', 1, this)" title="Helpful answer">👍</button>
+                            <button class="btn-fb" onclick="sendFeedback('${m.request_id}', -1, this)" title="Hallucination or unhelpful">👎</button>
+                        </div>
                     `;
                 } else {
                     contentEl.innerHTML = `<span style="color:var(--danger)">Error: ${data.error || 'Server error'}</span>`;
@@ -1000,6 +1032,25 @@
                 scrollToBottom();
             } catch (err) {
                 contentEl.innerHTML = `<span style="color:var(--danger)">Connection error: ${err.message}</span>`;
+            }
+        }
+
+        async function sendFeedback(requestId, rating, btn) {
+            if (!requestId) return;
+            try {
+                const res = await fetch('/v1/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ request_id: requestId, rating: rating })
+                });
+                if (res.ok) {
+                    const parent = btn.parentElement;
+                    parent.innerHTML = rating > 0 
+                        ? '<span style="color:var(--success);font-size:0.75rem;font-weight:600;">Thanks! 👍</span>' 
+                        : '<span style="color:var(--warning);font-size:0.75rem;font-weight:600;">Feedback recorded 👎</span>';
+                }
+            } catch (err) {
+                console.error('Feedback recording error:', err);
             }
         }
     </script>

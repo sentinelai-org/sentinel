@@ -20,6 +20,9 @@ from sentinel.api.schemas import (
     ChatMetadata,
     ChatRequest,
     ChatResponse,
+    FeedbackRequest,
+    FeedbackResponse,
+    FeedbackStats,
     HealthResponse,
     IngestJobRequest,
     IngestJobResponse,
@@ -30,6 +33,7 @@ from sentinel.api.schemas import (
 from sentinel.core.config import get_settings
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_current_span_id, get_current_trace_id
+from sentinel.evals.feedback import FeedbackStore
 from sentinel.evals.gate import GroundednessGate
 from sentinel.guardrails.input import InputGuardrail
 from sentinel.guardrails.output import OutputGuardrail
@@ -75,6 +79,11 @@ def get_llm_router(request: Request) -> Any:
 def get_embedder(request: Request) -> Any:
     """Dependency provider for text embedder."""
     return request.app.state.embedder
+
+
+def get_feedback_store(request: Request) -> FeedbackStore:
+    """Dependency provider for user feedback store."""
+    return request.app.state.feedback_store
 
 
 @router.get("/ui", response_class=HTMLResponse, tags=["UI"])
@@ -544,3 +553,46 @@ async def chat_stream(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ============================================================================
+# Phase 7: Closed-Loop Feedback & RLHF Dataset Collection
+# ============================================================================
+
+
+@router.post(
+    "/v1/feedback",
+    response_model=FeedbackResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Feedback"],
+)
+async def submit_feedback(
+    payload: FeedbackRequest,
+    feedback_store: FeedbackStore = Depends(get_feedback_store),
+) -> FeedbackResponse:
+    """Submit user evaluation feedback, ratings, and corrections for a query."""
+    return await feedback_store.record_feedback(payload)
+
+
+@router.get(
+    "/v1/feedback/stats",
+    response_model=FeedbackStats,
+    tags=["Feedback"],
+)
+async def get_feedback_stats(
+    feedback_store: FeedbackStore = Depends(get_feedback_store),
+) -> FeedbackStats:
+    """Retrieve aggregate user satisfaction metrics and rating distributions."""
+    return await feedback_store.get_stats()
+
+
+@router.get(
+    "/v1/feedback/export",
+    tags=["Feedback"],
+)
+async def export_tuning_dataset(
+    limit: int = 100,
+    feedback_store: FeedbackStore = Depends(get_feedback_store),
+) -> list[dict[str, Any]]:
+    """Export corrected feedback pairs formatted for fine-tuning or DPO alignment."""
+    return await feedback_store.export_tuning_dataset(limit=limit)

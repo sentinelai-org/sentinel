@@ -36,6 +36,7 @@ dev = [
     "mypy>=1.11.0",
     "pre-commit>=3.8.0",
     "types-redis>=4.6.0",
+    "locust>=2.31.0",
 ]
 
 [tool.setuptools.packages.find]

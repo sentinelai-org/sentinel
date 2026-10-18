@@ -67,7 +67,9 @@ jobs:
           docker build -t sentinel:latest .
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@v0.31.0
+        uses: aquasecurity/trivy-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image-ref: "sentinel:latest"
           format: "table"

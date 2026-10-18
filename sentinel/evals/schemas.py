@@ -1,6 +1,6 @@
 """Data models for automated RAG evaluation and groundedness checking."""
 
-from __future__ import annotations
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -64,3 +64,40 @@ class EvaluationReport(BaseModel):
     passed_gate_threshold: bool
     results: list[EvalResult] = Field(default_factory=list)
     timestamp: str
+
+
+class FeedbackRequest(BaseModel):
+    """User evaluation feedback on a specific gateway interaction."""
+
+    request_id: str = Field(..., min_length=1, description="Target request ID to evaluate")
+    rating: int = Field(
+        ..., ge=-1, le=5, description="Feedback rating (-1/1 for thumbs down/up, or 1-5 star scale)"
+    )
+    comment: str | None = Field(default=None, description="Optional qualitative user commentary")
+    correction: str | None = Field(
+        default=None, description="Optional user-provided correction for RLHF/fine-tuning"
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Arbitrary client metadata tags"
+    )
+
+
+class FeedbackResponse(BaseModel):
+    """Confirmation returned when user feedback is recorded."""
+
+    feedback_id: str = Field(description="Unique feedback tracking ID")
+    request_id: str = Field(description="Associated request ID")
+    status: str = Field(default="recorded", description="Status confirmation")
+    recorded_at: str = Field(description="ISO 8601 recording timestamp")
+
+
+class FeedbackStats(BaseModel):
+    """Aggregated statistics of user feedback."""
+
+    total_feedback: int = Field(description="Total feedback entries recorded")
+    positive_count: int = Field(description="Number of positive ratings (>= 1)")
+    negative_count: int = Field(description="Number of negative ratings (<= 0)")
+    satisfaction_rate: float = Field(description="Percentage of positive ratings (0.0 to 100.0)")
+    latest_feedback_at: str | None = Field(
+        default=None, description="Timestamp of most recent feedback"
+    )
