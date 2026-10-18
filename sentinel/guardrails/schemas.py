@@ -25,7 +25,7 @@ class GuardrailResult(BaseModel):
     violation_type: ViolationType | None = Field(
         default=None, description="Category of violation if rejected"
     )
-    
+
     reason: str | None = Field(default=None, description="Human-readable explanation of rejection")
     risk_score: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Estimated safety risk score"

@@ -6,7 +6,7 @@ import json
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import redis.asyncio as aioredis
 
@@ -57,7 +57,7 @@ class FeedbackStore:
             now_iso = datetime.now(UTC).isoformat()
             now_ts = time.time()
 
-            record = {
+            record: dict[str, str | int] = {
                 "feedback_id": feedback_id,
                 "request_id": payload.request_id,
                 "rating": payload.rating,
@@ -76,7 +76,7 @@ class FeedbackStore:
                 try:
                     pipe = client.pipeline()
                     # 1. Store full record hash
-                    pipe.hset(f"{self.FEEDBACK_KEY_PREFIX}{feedback_id}", mapping=record)
+                    pipe.hset(f"{self.FEEDBACK_KEY_PREFIX}{feedback_id}", mapping=cast(Any, record))
                     # 2. Add to sorted set timeline for range queries
                     pipe.zadd(self.TIMELINE_KEY, {feedback_id: now_ts})
                     # 3. Request ID index
@@ -200,13 +200,13 @@ class FeedbackStore:
                     dataset.append(sample)
                 elif rating < 0 and question:
                     # Negative example (DPO rejected sample)
-                    sample = {
+                    dpo_sample: dict[str, Any] = {
                         "prompt": question,
                         "rejected_answer": meta.get("rejected_answer", ""),
                         "comment": comment,
                         "rating": rating,
                         "type": "dpo_negative",
                     }
-                    dataset.append(sample)
+                    dataset.append(dpo_sample)
 
             return dataset

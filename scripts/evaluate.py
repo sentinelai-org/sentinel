@@ -54,7 +54,11 @@ async def run_evaluation(
 
     # LLM Router
     primary_llm: LLMProvider
-    if not offline and settings.gemini_api_key and settings.gemini_api_key != "your_gemini_api_key_here":
+    if (
+        not offline
+        and settings.gemini_api_key
+        and settings.gemini_api_key != "your_gemini_api_key_here"
+    ):
         primary_llm = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
     else:
         # High-fidelity mock provider matching golden dataset for zero-cost offline evaluations

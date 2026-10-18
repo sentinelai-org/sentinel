@@ -31,9 +31,10 @@ async def export_feedback_dataset(output_dir: Path, limit: int = 500) -> None:
     supervised_count = 0
     dpo_count = 0
 
-    with open(tuning_file, "w", encoding="utf-8") as f_tune, open(
-        dpo_file, "w", encoding="utf-8"
-    ) as f_dpo:
+    with (
+        open(tuning_file, "w", encoding="utf-8") as f_tune,
+        open(dpo_file, "w", encoding="utf-8") as f_dpo,
+    ):
         for item in dataset:
             if item.get("messages"):
                 f_tune.write(json.dumps(item) + "\n")
