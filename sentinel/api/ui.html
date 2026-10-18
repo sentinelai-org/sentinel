@@ -3,142 +3,851 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentinel LLMOps Platform</title>
+    <title>Sentinel | Enterprise LLMOps & RAG Gateway</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-color: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-color: #38bdf8;
+            --bg-main: #0b0f19;
+            --bg-sidebar: #070a12;
+            --bg-card: #131b2e;
+            --bg-card-hover: #18223a;
+            --bg-input: #111827;
+            --border-subtle: #1e293b;
+            --border-highlight: #334155;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.25);
             --accent-hover: #0ea5e9;
-            --border-color: #334155;
-            --success: #22c55e;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --user-bubble: #1e3a8a;
+            --user-text: #ffffff;
+            --bot-bubble: #151f33;
+            --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
+            --radius-md: 12px;
+            --radius-lg: 20px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg-color); color: var(--text-color); min-height: 100vh; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 900px; width: 100%; display: flex; flex-direction: column; gap: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
-        .logo { font-size: 1.5rem; font-weight: 700; color: var(--accent-color); letter-spacing: 0.5px; }
-        .badge { background: #0369a1; color: #e0f2fe; font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px; margin-left: 8px; }
-        .lang-switch button { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .lang-switch button:hover { border-color: var(--accent-color); }
-        .chat-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; height: 500px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); }
-        .chat-history { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
-        .message { display: flex; flex-direction: column; max-width: 85%; padding: 12px 16px; border-radius: 10px; line-height: 1.5; font-size: 0.95rem; }
-        .msg-user { align-self: flex-end; background: #0284c7; color: white; border-bottom-right-radius: 2px; }
-        .msg-bot { align-self: flex-start; background: #334155; border-bottom-left-radius: 2px; border-left: 3px solid var(--accent-color); }
-        .msg-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; padding-top: 6px; border-top: 1px dashed #475569; }
-        .sources-box { margin-top: 8px; font-size: 0.8rem; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 6px; border: 1px solid #475569; }
-        .sources-title { font-weight: 600; color: var(--accent-color); margin-bottom: 4px; }
-        .source-tag { display: inline-block; background: #0f172a; padding: 2px 6px; border-radius: 4px; margin-right: 6px; margin-top: 2px; }
-        .input-bar { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--border-color); background: #1a2234; align-items: center; }
-        .input-bar input { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 12px 16px; border-radius: 8px; outline: none; }
-        .input-bar input:focus { border-color: var(--accent-color); }
-        .input-bar button { background: var(--accent-color); color: #0f172a; font-weight: 600; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
-        .input-bar button:hover { background: var(--accent-hover); }
-        .controls { display: flex; gap: 15px; font-size: 0.85rem; color: var(--text-muted); align-items: center; }
-        .controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .cursor { display: inline-block; width: 6px; height: 14px; background: var(--accent-color); animation: blink 1s infinite; vertical-align: middle; margin-left: 2px; }
-        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation Header */
+        header {
+            height: 64px;
+            min-height: 64px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 20;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-emblem {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .logo-emblem svg {
+            width: 20px;
+            height: 20px;
+            fill: #ffffff;
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 3px 10px;
+            border-radius: 9999px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse-dot 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-model {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-header {
+            background: transparent;
+            border: 1px solid var(--border-highlight);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-header:hover {
+            color: var(--text-main);
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        /* Main Workspace */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Chat Scroll Area */
+        .chat-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 20px 140px 20px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 860px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Empty State / Welcome Hero */
+        .welcome-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin: 40px 0 20px 0;
+            gap: 16px;
+        }
+
+        .welcome-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .welcome-avatar svg {
+            width: 32px;
+            height: 32px;
+            fill: #ffffff;
+        }
+
+        .welcome-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .welcome-sub {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            max-width: 540px;
+            line-height: 1.6;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .suggestion-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 14px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .suggestion-card:hover {
+            border-color: var(--accent);
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .suggestion-card h4 {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .suggestion-card p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Message Rows (ChatGPT / Gemini style) */
+        .message-row {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .msg-avatar.bot {
+            background: linear-gradient(135deg, #0369a1, #0284c7);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.3);
+        }
+
+        .message-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 85%;
+        }
+
+        .message-row.user .message-body {
+            max-width: 75%;
+            align-items: flex-end;
+        }
+
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: var(--radius-lg);
+            line-height: 1.65;
+            font-size: 0.96rem;
+            word-break: break-word;
+        }
+
+        .message-row.user .message-bubble {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
+        }
+
+        .message-row.bot .message-bubble {
+            background: var(--bot-bubble);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            border-top-left-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Formatted Content Typography */
+        .markdown-content p {
+            margin-bottom: 12px;
+        }
+        .markdown-content p:last-child {
+            margin-bottom: 0;
+        }
+        .markdown-content ul, .markdown-content ol {
+            margin: 8px 0 12px 22px;
+        }
+        .markdown-content li {
+            margin-bottom: 6px;
+        }
+        .markdown-content strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .markdown-content code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .markdown-content pre {
+            background: #090d16;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .markdown-content pre code {
+            background: transparent;
+            padding: 0;
+            border: none;
+            color: #cbd5e1;
+        }
+
+        /* Citations Box */
+        .citations-container {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 4px;
+        }
+
+        .citations-header {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .citation-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .citation-tag {
+            font-size: 0.76rem;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: #bae6fd;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .citation-tag .score {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Metadata & Audit Bar */
+        .message-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.74rem;
+            color: var(--text-faint);
+            padding: 4px 6px 0 6px;
+        }
+
+        .meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .meta-pill strong {
+            color: var(--text-muted);
+        }
+
+        .grounded-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .grounded-badge.pass {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .grounded-badge.fail {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Streaming Cursor */
+        .cursor {
+            display: inline-block;
+            width: 7px;
+            height: 17px;
+            background: var(--accent);
+            animation: pulse-cursor 0.9s infinite;
+            vertical-align: text-bottom;
+            margin-left: 3px;
+            border-radius: 2px;
+        }
+
+        @keyframes pulse-cursor {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Floating Input Deck (ChatGPT / Gemini style) */
+        .input-dock {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 20px 20px 20px;
+            background: linear-gradient(180deg, rgba(11, 15, 25, 0) 0%, rgba(11, 15, 25, 0.9) 35%, rgba(11, 15, 25, 1) 100%);
+            z-index: 10;
+        }
+
+        .input-dock-inner {
+            width: 100%;
+            max-width: 860px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-box-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border-highlight);
+            border-radius: 18px;
+            padding: 8px 12px 8px 16px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s ease;
+        }
+
+        .input-box-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow), 0 12px 35px -5px rgba(0, 0, 0, 0.6);
+        }
+
+        .chat-textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 0.98rem;
+            line-height: 1.5;
+            resize: none;
+            max-height: 180px;
+            min-height: 24px;
+            padding: 4px 0;
+        }
+
+        .chat-textarea::placeholder {
+            color: var(--text-faint);
+        }
+
+        .send-button {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: var(--accent);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-button:disabled {
+            background: var(--border-highlight);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .send-button:not(:disabled):hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .send-button svg {
+            width: 18px;
+            height: 18px;
+            fill: #0b0f19;
+            transform: rotate(-45deg) translate(1px, -1px);
+        }
+
+        /* Bottom Status & Info Bar */
+        .dock-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.76rem;
+            color: var(--text-faint);
+            padding: 0 8px;
+        }
+
+        .dock-footer-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-switch input {
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        @media (max-width: 640px) {
+            header { padding: 0 16px; }
+            .badge-model { display: none; }
+            .chat-scroll-area { padding: 16px 12px 140px 12px; }
+            .message-bubble { padding: 12px 14px; font-size: 0.9rem; }
+            .welcome-title { font-size: 1.3rem; }
+            .suggestions-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                SENTINEL <span class="badge">SSE Stream v0.5.0</span>
-            </div>
-            <div class="lang-switch">
-                <button onclick="setLang('en')">EN</button>
-                <button onclick="setLang('fr')">FR</button>
-            </div>
-        </header>
 
-        <div id="desc-en" style="color: var(--text-muted); font-size: 0.9rem;">
-            Real-time RAG Agent with Server-Sent Events (SSE) token streaming, Groundedness Gate verification, and asynchronous Redis Streams document ingestion.
-        </div>
-        <div id="desc-fr" style="display:none; color: var(--text-muted); font-size: 0.9rem;">
-            Agent RAG temps réel avec streaming de tokens Server-Sent Events (SSE), vérification Groundedness Gate et ingestion documentaire asynchrone Redis Streams.
+    <!-- Header -->
+    <header>
+        <div class="brand-section">
+            <div class="logo-emblem">
+                <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 4c1.66 0 3 1.34 3 3 0 .78-.3 1.49-.79 2.02l2.49 2.49-1.41 1.41-2.49-2.49A3.003 3.003 0 0112 15c-1.66 0-3-1.34-3-3s1.34-3 3-3z"/></svg>
+            </div>
+            <div class="brand-title">SENTINEL</div>
+            <div class="status-pill">
+                <div class="status-dot"></div>
+                Gateway Online
+            </div>
         </div>
 
-        <div class="chat-card">
-            <div class="chat-history" id="chat-history">
-                <div class="message msg-bot">
-                    <div>Bonjour / Hello! I am Sentinel. Ask me anything about Kubernetes architecture or deployment documentation.</div>
+        <div class="header-actions">
+            <div class="badge-model">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z"/></svg>
+                <span id="model-indicator">gemini-3.8-flash</span>
+            </div>
+            <button class="btn-header" onclick="clearChat()">Clear Chat</button>
+            <button class="btn-header" onclick="toggleLang()" id="lang-btn">FR</button>
+        </div>
+    </header>
+
+    <!-- Main Chat Workspace -->
+    <main>
+        <div class="chat-scroll-area" id="scroll-area">
+            <div class="chat-container" id="chat-container">
+
+                <!-- Welcome State -->
+                <div class="welcome-hero" id="welcome-hero">
+                    <div class="welcome-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                    </div>
+                    <div class="welcome-title" id="welcome-title">How can Sentinel assist you today?</div>
+                    <div class="welcome-sub" id="welcome-sub">
+                        Real-time RAG Agent connected to your Kubernetes cluster documentation, backed by Qdrant vector retrieval, Groundedness Gate verification, and Redis streaming cache.
+                    </div>
+
+                    <div class="suggestions-grid">
+                        <div class="suggestion-card" onclick="usePrompt('What is a Kubernetes Pod and how does it share storage?')">
+                            <h4>📦 Kubernetes Pods</h4>
+                            <p>Storage, networking, and multi-container specs</p>
+                        </div>
+                        <div class="suggestion-card" onclick="usePrompt('Explain Kubernetes Deployment rolling update strategy and parameters.')">
+                            <h4>🔄 Deployment Strategies</h4>
+                            <p>maxSurge, maxUnavailable, zero downtime</p>
+                        </div>
+                        <div class="suggestion-card" onclick="usePrompt('How do Kubernetes Services route traffic to Pods?')">
+                            <h4>🌐 Cluster Networking</h4>
+                            <p>Selectors, kube-proxy, and DNS resolution</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Floating Bottom Input Dock -->
+        <div class="input-dock">
+            <div class="input-dock-inner">
+                <div class="input-box-wrapper">
+                    <textarea 
+                        id="chat-input" 
+                        class="chat-textarea" 
+                        rows="1" 
+                        placeholder="Ask anything about your architecture or cluster..."
+                        oninput="autoResize(this)"
+                        onkeydown="handleKey(event)"
+                    ></textarea>
+                    <button class="send-button" id="send-btn" onclick="submitMessage()" title="Send message">
+                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+
+                <div class="dock-footer">
+                    <div class="dock-footer-left">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="stream-toggle" checked>
+                            <span>Live SSE Streaming</span>
+                        </label>
+                        <span>•</span>
+                        <span>Worker Queue: <code style="color:var(--text-muted)">ingest_jobs</code></span>
+                    </div>
+                    <div>
+                        <span>Sentinel LLMOps v0.5.0 • Groundedness Verified</span>
+                    </div>
                 </div>
             </div>
-            <div class="input-bar">
-                <input type="text" id="question-input" placeholder="Ask a question / Posez une question..." onkeydown="if(event.key==='Enter') sendQuestion()">
-                <button id="send-btn" onclick="sendQuestion()">Send</button>
-            </div>
         </div>
-
-        <div class="controls">
-            <label>
-                <input type="checkbox" id="stream-toggle" checked> Live SSE Token Streaming
-            </label>
-            <span>•</span>
-            <span>Gateway status: <strong style="color:var(--success)">Online</strong></span>
-            <span>•</span>
-            <span>Worker Queue: <strong>sentinel:stream:ingest_jobs</strong></span>
-        </div>
-    </div>
+    </main>
 
     <script>
         let currentLang = 'en';
-        function setLang(lang) {
-            currentLang = lang;
-            document.getElementById('desc-en').style.display = lang === 'en' ? 'block' : 'none';
-            document.getElementById('desc-fr').style.display = lang === 'fr' ? 'block' : 'none';
+
+        // Markdown renderer setup
+        function renderMarkdown(text) {
+            if (window.marked && typeof window.marked.parse === 'function') {
+                try {
+                    return window.marked.parse(text);
+                } catch(e) {
+                    console.error('Marked parsing error:', e);
+                }
+            }
+            // Fallback lightweight parser
+            let safe = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>');
+            return safe;
         }
 
-        async function sendQuestion() {
-            const input = document.getElementById('question-input');
-            const q = input.value.trim();
-            if (!q) return;
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+            document.getElementById('send-btn').disabled = !el.value.trim();
+        }
 
-            const streamEnabled = document.getElementById('stream-toggle').checked;
-            const history = document.getElementById('chat-history');
-
-            // Append User message
-            const userMsg = document.createElement('div');
-            userMsg.className = 'message msg-user';
-            userMsg.innerText = q;
-            history.appendChild(userMsg);
-            input.value = '';
-
-            // Bot placeholder
-            const botMsg = document.createElement('div');
-            botMsg.className = 'message msg-bot';
-            const botContent = document.createElement('div');
-            const cursor = document.createElement('span');
-            cursor.className = 'cursor';
-            botContent.appendChild(cursor);
-            botMsg.appendChild(botContent);
-
-            const sourcesBox = document.createElement('div');
-            sourcesBox.className = 'sources-box';
-            sourcesBox.style.display = 'none';
-            botMsg.appendChild(sourcesBox);
-
-            const metaBox = document.createElement('div');
-            metaBox.className = 'msg-meta';
-            botMsg.appendChild(metaBox);
-
-            history.appendChild(botMsg);
-            history.scrollTop = history.scrollHeight;
-
-            if (streamEnabled) {
-                await streamResponse(q, botContent, cursor, sourcesBox, metaBox);
-            } else {
-                await regularResponse(q, botContent, cursor, sourcesBox, metaBox);
+        function handleKey(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitMessage();
             }
         }
 
-        async function streamResponse(question, contentEl, cursorEl, sourcesEl, metaEl) {
+        function usePrompt(text) {
+            const input = document.getElementById('chat-input');
+            input.value = text;
+            autoResize(input);
+            submitMessage();
+        }
+
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'fr' : 'en';
+            document.getElementById('lang-btn').innerText = currentLang === 'en' ? 'FR' : 'EN';
+            const welcomeTitle = document.getElementById('welcome-title');
+            const welcomeSub = document.getElementById('welcome-sub');
+            const input = document.getElementById('chat-input');
+
+            if (currentLang === 'fr') {
+                if (welcomeTitle) welcomeTitle.innerText = "Comment Sentinel peut vous aider ?";
+                if (welcomeSub) welcomeSub.innerText = "Agent RAG temps réel connecté à votre documentation Kubernetes, avec recherche vectorielle Qdrant, porte de vérification Groundedness et cache Redis.";
+                input.placeholder = "Posez une question sur votre architecture ou cluster...";
+            } else {
+                if (welcomeTitle) welcomeTitle.innerText = "How can Sentinel assist you today?";
+                if (welcomeSub) welcomeSub.innerText = "Real-time RAG Agent connected to your Kubernetes cluster documentation, backed by Qdrant vector retrieval, Groundedness Gate verification, and Redis streaming cache.";
+                input.placeholder = "Ask anything about your architecture or cluster...";
+            }
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chat-container');
+            container.innerHTML = `
+                <div class="welcome-hero" id="welcome-hero">
+                    <div class="welcome-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                    </div>
+                    <div class="welcome-title" id="welcome-title">How can Sentinel assist you today?</div>
+                    <div class="welcome-sub" id="welcome-sub">
+                        Real-time RAG Agent connected to your Kubernetes cluster documentation, backed by Qdrant vector retrieval, Groundedness Gate verification, and Redis streaming cache.
+                    </div>
+                    <div class="suggestions-grid">
+                        <div class="suggestion-card" onclick="usePrompt('What is a Kubernetes Pod and how does it share storage?')">
+                            <h4>📦 Kubernetes Pods</h4>
+                            <p>Storage, networking, and multi-container specs</p>
+                        </div>
+                        <div class="suggestion-card" onclick="usePrompt('Explain Kubernetes Deployment rolling update strategy and parameters.')">
+                            <h4>🔄 Deployment Strategies</h4>
+                            <p>maxSurge, maxUnavailable, zero downtime</p>
+                        </div>
+                        <div class="suggestion-card" onclick="usePrompt('How do Kubernetes Services route traffic to Pods?')">
+                            <h4>🌐 Cluster Networking</h4>
+                            <p>Selectors, kube-proxy, and DNS resolution</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function scrollToBottom() {
+            const scrollArea = document.getElementById('scroll-area');
+            scrollArea.scrollTop = scrollArea.scrollHeight;
+        }
+
+        async function submitMessage() {
+            const input = document.getElementById('chat-input');
+            const question = input.value.trim();
+            if (!question) return;
+
+            // Hide welcome hero if first message
+            const hero = document.getElementById('welcome-hero');
+            if (hero) hero.remove();
+
+            const container = document.getElementById('chat-container');
+            const streamEnabled = document.getElementById('stream-toggle').checked;
+
+            // 1. Append User Message
+            const userRow = document.createElement('div');
+            userRow.className = 'message-row user';
+            userRow.innerHTML = `
+                <div class="message-body">
+                    <div class="message-bubble">${renderMarkdown(question)}</div>
+                </div>
+            `;
+            container.appendChild(userRow);
+
+            // Clear input & reset height
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('send-btn').disabled = true;
+
+            // 2. Append Bot Placeholder
+            const botRow = document.createElement('div');
+            botRow.className = 'message-row bot';
+            botRow.innerHTML = `
+                <div class="msg-avatar bot">S</div>
+                <div class="message-body" style="width: 100%;">
+                    <div class="message-bubble">
+                        <div class="markdown-content"><span class="cursor"></span></div>
+                    </div>
+                    <div class="citations-container" style="display:none;"></div>
+                    <div class="message-meta" style="display:none;"></div>
+                </div>
+            `;
+            container.appendChild(botRow);
+            scrollToBottom();
+
+            const contentEl = botRow.querySelector('.markdown-content');
+            const citationsEl = botRow.querySelector('.citations-container');
+            const metaEl = botRow.querySelector('.message-meta');
+
+            if (streamEnabled) {
+                await handleStream(question, contentEl, citationsEl, metaEl);
+            } else {
+                await handleRegular(question, contentEl, citationsEl, metaEl);
+            }
+        }
+
+        async function handleStream(question, contentEl, citationsEl, metaEl) {
             try {
                 const response = await fetch('/v1/chat/stream', {
                     method: 'POST',
@@ -147,15 +856,14 @@
                 });
 
                 if (!response.ok) {
-                    contentEl.innerText = 'Error: Received ' + response.status;
-                    cursorEl.remove();
+                    contentEl.innerHTML = `<span style="color:var(--danger)">Error: Received ${response.status} from gateway</span>`;
                     return;
                 }
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
                 let buffer = '';
-                let fullAnswer = '';
+                let rawAccumulated = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -163,7 +871,7 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const events = buffer.split('\n\n');
-                    buffer = events.pop(); // keep partial
+                    buffer = events.pop();
 
                     for (const rawEvent of events) {
                         if (!rawEvent.trim()) continue;
@@ -181,68 +889,117 @@
 
                         if (eventType === 'token') {
                             const data = JSON.parse(dataStr);
-                            fullAnswer += data.token;
-                            contentEl.innerText = fullAnswer;
-                            contentEl.appendChild(cursorEl);
+                            rawAccumulated += data.token;
+                            contentEl.innerHTML = renderMarkdown(rawAccumulated) + '<span class="cursor"></span>';
                         } else if (eventType === 'sources') {
                             const sources = JSON.parse(dataStr);
                             if (sources && sources.length > 0) {
-                                sourcesEl.style.display = 'block';
-                                sourcesEl.innerHTML = '<div class="sources-title">Retrieved Citations:</div>' +
-                                    sources.map(s => `<span class="source-tag">${s.source} (${(s.score*100).toFixed(0)}%)</span>`).join('');
+                                citationsEl.style.display = 'block';
+                                citationsEl.innerHTML = `
+                                    <div class="citations-header">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                                        Retrieved Citations (${sources.length})
+                                    </div>
+                                    <div class="citation-tags">
+                                        ${sources.map(s => `
+                                            <div class="citation-tag">
+                                                <span>📄 ${s.source}</span>
+                                                <span class="score">${(s.score * 100).toFixed(0)}%</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                `;
                             }
                         } else if (eventType === 'done') {
                             const doneData = JSON.parse(dataStr);
                             const m = doneData.meta;
-                            cursorEl.remove();
+                            // Remove cursor
+                            contentEl.innerHTML = renderMarkdown(rawAccumulated);
+
+                            // Format Groundedness badge
+                            const gScore = m.groundedness_score !== null ? (m.groundedness_score * 100).toFixed(0) + '%' : 'N/A';
+                            const gPass = m.groundedness_score !== null && m.groundedness_score >= 0.7;
+                            const gBadge = m.groundedness_score !== null 
+                                ? `<span class="grounded-badge ${gPass ? 'pass' : 'fail'}">Grounded: ${gScore}</span>`
+                                : `<span>Grounded: N/A</span>`;
+
+                            metaEl.style.display = 'flex';
                             metaEl.innerHTML = `
-                                <span>Latency: <strong>${m.latency_ms} ms</strong></span>
-                                <span>Model: <strong>${m.model}</strong></span>
-                                <span>Cache: <strong>${m.cache_hit ? m.cache_type : 'miss'}</strong></span>
-                                <span>Groundedness: <strong>${m.groundedness_score !== null ? (m.groundedness_score*100).toFixed(0)+'%' : 'N/A'}</strong></span>
+                                <span class="meta-pill">⚡ <strong>${m.latency_ms} ms</strong></span>
+                                <span>•</span>
+                                <span class="meta-pill">🤖 <strong>${m.model}</strong></span>
+                                <span>•</span>
+                                <span class="meta-pill">💾 <strong>${m.cache_hit ? m.cache_type : 'Cache Miss'}</strong></span>
+                                <span>•</span>
+                                ${gBadge}
                             `;
                         } else if (eventType === 'error') {
                             const err = JSON.parse(dataStr);
-                            contentEl.innerText = 'Stream error: ' + err.error;
-                            cursorEl.remove();
+                            contentEl.innerHTML = `<span style="color:var(--danger)">Stream error: ${err.error}</span>`;
                         }
                     }
-                    document.getElementById('chat-history').scrollTop = document.getElementById('chat-history').scrollHeight;
+                    scrollToBottom();
                 }
-                cursorEl.remove();
+                // Final cleanup of cursor
+                contentEl.innerHTML = renderMarkdown(rawAccumulated);
             } catch (err) {
-                cursorEl.remove();
-                contentEl.innerText = 'Connection error: ' + err.message;
+                contentEl.innerHTML = `<span style="color:var(--danger)">Connection error: ${err.message}</span>`;
             }
         }
 
-        async function regularResponse(question, contentEl, cursorEl, sourcesEl, metaEl) {
+        async function handleRegular(question, contentEl, citationsEl, metaEl) {
             try {
                 const response = await fetch('/v1/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question: question, session_id: 'ui-rest' })
                 });
-                cursorEl.remove();
+
                 const data = await response.json();
                 if (response.ok) {
-                    contentEl.innerText = data.answer;
+                    contentEl.innerHTML = renderMarkdown(data.answer);
+
                     if (data.sources && data.sources.length > 0) {
-                        sourcesEl.style.display = 'block';
-                        sourcesEl.innerHTML = '<div class="sources-title">Retrieved Citations:</div>' +
-                            data.sources.map(s => `<span class="source-tag">${s.source} (${(s.score*100).toFixed(0)}%)</span>`).join('');
+                        citationsEl.style.display = 'block';
+                        citationsEl.innerHTML = `
+                            <div class="citations-header">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                                Retrieved Citations (${data.sources.length})
+                            </div>
+                            <div class="citation-tags">
+                                ${data.sources.map(s => `
+                                    <div class="citation-tag">
+                                        <span>📄 ${s.source}</span>
+                                        <span class="score">${(s.score * 100).toFixed(0)}%</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
                     }
+
+                    const m = data.meta;
+                    const gScore = m.groundedness_score !== null ? (m.groundedness_score * 100).toFixed(0) + '%' : 'N/A';
+                    const gPass = m.groundedness_score !== null && m.groundedness_score >= 0.7;
+                    const gBadge = m.groundedness_score !== null 
+                        ? `<span class="grounded-badge ${gPass ? 'pass' : 'fail'}">Grounded: ${gScore}</span>`
+                        : `<span>Grounded: N/A</span>`;
+
+                    metaEl.style.display = 'flex';
                     metaEl.innerHTML = `
-                        <span>Latency: <strong>${data.meta.latency_ms} ms</strong></span>
-                        <span>Model: <strong>${data.meta.model}</strong></span>
-                        <span>Cache: <strong>${data.meta.cache_hit ? data.meta.cache_type : 'miss'}</strong></span>
+                        <span class="meta-pill">⚡ <strong>${m.latency_ms} ms</strong></span>
+                        <span>•</span>
+                        <span class="meta-pill">🤖 <strong>${m.model}</strong></span>
+                        <span>•</span>
+                        <span class="meta-pill">💾 <strong>${m.cache_hit ? m.cache_type : 'Cache Miss'}</strong></span>
+                        <span>•</span>
+                        ${gBadge}
                     `;
                 } else {
-                    contentEl.innerText = 'Error: ' + (data.error || 'Server error');
+                    contentEl.innerHTML = `<span style="color:var(--danger)">Error: ${data.error || 'Server error'}</span>`;
                 }
+                scrollToBottom();
             } catch (err) {
-                cursorEl.remove();
-                contentEl.innerText = 'Connection error: ' + err.message;
+                contentEl.innerHTML = `<span style="color:var(--danger)">Connection error: ${err.message}</span>`;
             }
         }
     </script>

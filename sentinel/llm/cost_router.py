@@ -14,8 +14,8 @@ from sentinel.llm.router import LLMRouter
 logger = get_logger(__name__)
 tracer = get_tracer("sentinel.llm.cost_router")
 
-# Pricing table per 1,000,000 tokens (USD)
 MODEL_PRICING: dict[str, dict[str, float]] = {
+    "gemini-3.8-flash": {"input": 0.075, "output": 0.30},
     "gemini-2.5-flash": {"input": 0.075, "output": 0.30},
     "gemini-1.5-flash": {"input": 0.075, "output": 0.30},
     "gemini-1.5-pro": {"input": 1.25, "output": 5.00},
