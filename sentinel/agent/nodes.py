@@ -12,8 +12,10 @@ from sentinel.guardrails.input import InputGuardrail
 from sentinel.guardrails.output import OutputGuardrail
 from sentinel.llm.cost_router import CostAwareRouter, calculate_cost_usd
 from sentinel.llm.router import LLMRouter
+from sentinel.rag.bm25 import BM25Index, reciprocal_rank_fusion
 from sentinel.rag.embedder import LocalEmbedder
-from sentinel.rag.vector_store import VectorStore
+from sentinel.rag.reranker import BaseReranker
+from sentinel.rag.vector_store import ScoredDocument, VectorStore
 
 logger = get_logger(__name__)
 tracer = get_tracer("sentinel.agent")
@@ -37,6 +39,12 @@ class AgentNodeHandler:
         groundedness_gate: GroundednessGate | None = None,
         input_guardrail: InputGuardrail | None = None,
         output_guardrail: OutputGuardrail | None = None,
+        bm25_index: BM25Index | None = None,
+        reranker: BaseReranker | None = None,
+        hybrid_search_enabled: bool = True,
+        reranker_enabled: bool = True,
+        candidates_k: int = 20,
+        rrf_k: int = 60,
     ) -> None:
         self.vector_store = vector_store
         self.embedder = embedder
@@ -46,6 +54,12 @@ class AgentNodeHandler:
         self.groundedness_gate = groundedness_gate or GroundednessGate(threshold=0.70)
         self.input_guardrail = input_guardrail or InputGuardrail(enabled=True)
         self.output_guardrail = output_guardrail or OutputGuardrail(enabled=True)
+        self.bm25_index = bm25_index
+        self.reranker = reranker
+        self.hybrid_search_enabled = hybrid_search_enabled
+        self.reranker_enabled = reranker_enabled
+        self.candidates_k = candidates_k
+        self.rrf_k = rrf_k
 
     async def guardrail_input(self, state: AgentState) -> dict[str, Any]:
         """Evaluate incoming question for safety violations and redact PII."""
@@ -92,20 +106,67 @@ class AgentNodeHandler:
         }
 
     async def retrieve(self, state: AgentState) -> dict[str, Any]:
-        """Retrieve relevant context chunks from vector store."""
+        """Retrieve relevant context chunks using Hybrid Search (BM25 + Dense RRF) and Cross-Encoder Re-ranking."""
         question = state["question"]
         logger.info("Retrieving documents for question", extra={"question": question})
 
         with tracer.start_as_current_span("rag.retrieve") as span:
             span.set_attribute("rag.query", question)
             span.set_attribute("rag.top_k", self.top_k)
+            span.set_attribute(
+                "rag.hybrid_enabled", self.hybrid_search_enabled and bool(self.bm25_index)
+            )
+            span.set_attribute(
+                "rag.reranker_enabled", self.reranker_enabled and bool(self.reranker)
+            )
 
             query_vec = self.embedder.embed_text(question)
-            scored_docs = await self.vector_store.search(
+            retrieval_k = (
+                self.candidates_k
+                if (self.hybrid_search_enabled or self.reranker_enabled)
+                else self.top_k
+            )
+
+            # 1. Candidate Retrieval (Dense vs Hybrid BM25)
+            dense_docs = await self.vector_store.search(
                 query_vector=query_vec,
-                top_k=self.top_k,
+                top_k=retrieval_k,
                 score_threshold=0.0,
             )
+
+            candidate_docs: list[ScoredDocument]
+            if (
+                self.hybrid_search_enabled
+                and self.bm25_index is not None
+                and len(self.bm25_index) > 0
+            ):
+                sparse_docs = self.bm25_index.search(
+                    query=question,
+                    top_k=retrieval_k,
+                )
+                candidate_docs = reciprocal_rank_fusion(
+                    dense_results=dense_docs,
+                    sparse_results=sparse_docs,
+                    k=self.rrf_k,
+                    top_k=retrieval_k,
+                )
+                span.set_attribute("rag.dense_candidates_count", len(dense_docs))
+                span.set_attribute("rag.sparse_candidates_count", len(sparse_docs))
+                span.set_attribute("rag.fused_candidates_count", len(candidate_docs))
+            else:
+                candidate_docs = dense_docs
+
+            # 2. Cross-Encoder Re-ranking (Top-20 candidates -> Top-N final)
+            final_docs: list[ScoredDocument]
+            if self.reranker_enabled and self.reranker is not None and candidate_docs:
+                final_docs = self.reranker.rerank(
+                    query=question,
+                    documents=candidate_docs,
+                    top_n=self.top_k,
+                )
+                span.set_attribute("rag.reranked_count", len(final_docs))
+            else:
+                final_docs = candidate_docs[: self.top_k]
 
             documents: list[dict[str, Any]] = [
                 {
@@ -114,7 +175,7 @@ class AgentNodeHandler:
                     "source": doc.metadata.get("source", "unknown"),
                     "chunk_id": doc.chunk_id,
                 }
-                for doc in scored_docs
+                for doc in final_docs
             ]
 
             span.set_attribute("rag.retrieved_chunks_count", len(documents))
@@ -122,10 +183,12 @@ class AgentNodeHandler:
             span.set_attribute("rag.top_score", top_score)
 
             logger.info(
-                "Retrieved documents",
+                "Retrieved and processed documents",
                 extra={
                     "count": len(documents),
                     "top_score": top_score,
+                    "hybrid_active": self.hybrid_search_enabled and bool(self.bm25_index),
+                    "rerank_active": self.reranker_enabled and bool(self.reranker),
                 },
             )
             return {"documents": documents}

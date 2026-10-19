@@ -17,8 +17,10 @@ from sentinel.evals.judge import BaseJudge, HeuristicJudge, LLMJudge
 from sentinel.llm.base import LLMProvider, LLMResult
 from sentinel.llm.gemini import GeminiProvider
 from sentinel.llm.router import LLMRouter
+from sentinel.rag.bm25 import BM25Index
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.qdrant import QdrantVectorStore
+from sentinel.rag.reranker import CrossEncoderReranker
 
 
 async def run_evaluation(
@@ -100,6 +102,27 @@ async def run_evaluation(
     router = LLMRouter(primary_provider=primary_llm)
     gate = GroundednessGate(threshold=settings.groundedness_threshold)
 
+    # Initialize BM25 sparse index (load if exists, otherwise load from docs directory)
+    bm25_index = BM25Index.load_from_file(settings.bm25_index_path)
+    if len(bm25_index) == 0:
+        docs_dir = Path("./data/docs")
+        if docs_dir.exists():
+            from sentinel.rag.chunker import RecursiveChunker
+            from sentinel.rag.loader import MarkdownLoader
+
+            loader = MarkdownLoader()
+            chunker = RecursiveChunker(chunk_size=600, chunk_overlap=100)
+            docs = loader.load_directory(docs_dir)
+            all_chunks = []
+            for d in docs:
+                all_chunks.extend(
+                    chunker.chunk_document(doc_id=d.doc_id, text=d.text, metadata=d.metadata)
+                )
+            bm25_index.add_documents(all_chunks)
+            bm25_index.save_to_file(settings.bm25_index_path)
+
+    reranker = CrossEncoderReranker(model_name=settings.reranker_model, force_mock=offline)
+
     node_handler = AgentNodeHandler(
         vector_store=vector_store,
         embedder=embedder,
@@ -107,6 +130,12 @@ async def run_evaluation(
         score_threshold=settings.score_threshold,
         top_k=settings.retrieval_top_k,
         groundedness_gate=gate,
+        bm25_index=bm25_index,
+        reranker=reranker,
+        hybrid_search_enabled=settings.hybrid_search_enabled,
+        reranker_enabled=settings.reranker_enabled,
+        candidates_k=settings.retrieval_candidates_k,
+        rrf_k=settings.hybrid_rrf_k,
     )
     graph = create_agent_graph(node_handler)
 

@@ -29,8 +29,10 @@ from sentinel.llm.cost_router import CostAwareRouter
 from sentinel.llm.fake import FakeProvider
 from sentinel.llm.gemini import GeminiProvider
 from sentinel.llm.ollama import OllamaProvider
+from sentinel.rag.bm25 import BM25Index
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.qdrant import QdrantVectorStore
+from sentinel.rag.reranker import CrossEncoderReranker
 from sentinel.workers.queue import RedisJobQueue
 from sentinel.workers.worker import IngestWorker
 
@@ -149,6 +151,13 @@ def build_app(
         input_guardrail = InputGuardrail(enabled=current_settings.guardrails_enabled)
         output_guardrail = OutputGuardrail(enabled=current_settings.guardrails_enabled)
 
+        # 7. Hybrid Search (BM25) & Cross-Encoder Re-ranker (RAG Precision)
+        bm25_index = BM25Index.load_from_file(current_settings.bm25_index_path)
+        app.state.bm25_index = bm25_index
+
+        reranker = CrossEncoderReranker(model_name=current_settings.reranker_model)
+        app.state.reranker = reranker
+
         node_handler = AgentNodeHandler(
             vector_store=vector_store,
             embedder=embedder,
@@ -158,10 +167,16 @@ def build_app(
             groundedness_gate=gate,
             input_guardrail=input_guardrail,
             output_guardrail=output_guardrail,
+            bm25_index=bm25_index,
+            reranker=reranker,
+            hybrid_search_enabled=current_settings.hybrid_search_enabled,
+            reranker_enabled=current_settings.reranker_enabled,
+            candidates_k=current_settings.retrieval_candidates_k,
+            rrf_k=current_settings.hybrid_rrf_k,
         )
         app.state.agent_graph = create_agent_graph(node_handler)
 
-        # 7. Background Ingestion Worker & Queue (Phase 5)
+        # 8. Background Ingestion Worker & Queue (Phase 5)
         job_queue = RedisJobQueue(
             redis_url=current_settings.redis_url,
             stream_name=current_settings.ingest_stream_name,
@@ -179,11 +194,13 @@ def build_app(
             queue=job_queue,
             vector_store=vector_store,
             embedder=embedder,
+            bm25_index=bm25_index,
+            bm25_index_path=current_settings.bm25_index_path,
         )
         app.state.ingest_worker = ingest_worker
         worker_task = asyncio.create_task(ingest_worker.run_loop())
 
-        # 8. User Feedback & RLHF Store (Phase 7)
+        # 9. User Feedback & RLHF Store (Phase 7)
         app.state.feedback_store = FeedbackStore(redis_url=current_settings.redis_url)
 
         yield

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sentinel.core.config import get_settings
 from sentinel.core.logging import get_logger, setup_logging
+from sentinel.rag.bm25 import BM25Index
 from sentinel.rag.chunker import RecursiveChunker
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.loader import MarkdownLoader
@@ -65,12 +66,22 @@ async def run_ingestion(docs_dir: Path, collection_name: str | None = None) -> i
     total_count = await vector_store.count()
     await vector_store.close()
 
+    # 5. Build and save BM25 sparse index for Hybrid Search
+    bm25_index = BM25Index()
+    bm25_index.add_documents(all_chunks)
+    bm25_index.save_to_file(settings.bm25_index_path)
+
     logger.info(
         "Ingestion completed successfully",
-        extra={"ingested_chunks": len(all_chunks), "collection_total": total_count},
+        extra={
+            "ingested_chunks": len(all_chunks),
+            "collection_total": total_count,
+            "bm25_index_path": settings.bm25_index_path,
+        },
     )
     print(
-        f"Ingested {len(all_chunks)} chunks from {len(documents)} documents. Total in Qdrant: {total_count}"
+        f"Ingested {len(all_chunks)} chunks from {len(documents)} documents. "
+        f"Total in Qdrant: {total_count}. BM25 sparse index saved to {settings.bm25_index_path}"
     )
     return len(all_chunks)
 

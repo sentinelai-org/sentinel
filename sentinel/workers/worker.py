@@ -9,6 +9,7 @@ from typing import Any
 
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_tracer
+from sentinel.rag.bm25 import BM25Index
 from sentinel.rag.chunker import RecursiveChunker
 from sentinel.rag.embedder import LocalEmbedder
 from sentinel.rag.vector_store import VectorStore
@@ -19,7 +20,7 @@ tracer = get_tracer("sentinel.workers.ingest")
 
 
 class IngestWorker:
-    """Worker consuming document ingestion jobs and indexing them into Qdrant."""
+    """Worker consuming document ingestion jobs and indexing them into Qdrant and BM25."""
 
     def __init__(
         self,
@@ -27,12 +28,16 @@ class IngestWorker:
         vector_store: VectorStore,
         embedder: LocalEmbedder,
         chunker: RecursiveChunker | None = None,
+        bm25_index: BM25Index | None = None,
+        bm25_index_path: str | None = None,
         consumer_name: str | None = None,
     ) -> None:
         self.queue = queue
         self.vector_store = vector_store
         self.embedder = embedder
         self.chunker = chunker or RecursiveChunker(chunk_size=600, chunk_overlap=100)
+        self.bm25_index = bm25_index
+        self.bm25_index_path = bm25_index_path
         self.consumer_name = consumer_name or f"worker_{uuid.uuid4().hex[:8]}"
         self._running = False
 
@@ -67,6 +72,10 @@ class IngestWorker:
                         texts_to_embed = [c.text for c in chunks]
                         embeddings = self.embedder.embed_batch(texts_to_embed)
                         await self.vector_store.upsert(chunks, embeddings)
+                        if self.bm25_index is not None:
+                            self.bm25_index.add_documents(chunks)
+                            if self.bm25_index_path:
+                                self.bm25_index.save_to_file(self.bm25_index_path)
                         total_chunks += len(chunks)
 
                     await self.queue.update_job_status(

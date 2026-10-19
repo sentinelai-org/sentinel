@@ -1,0 +1,188 @@
+{
+  "k1": 1.5,
+  "b": 0.75,
+  "documents": [
+    {
+      "chunk_id": "79408a0658dabf6b2bf1e2cd76c824f5701b8b6bc394ccdd7c8d43858ae6b07f",
+      "doc_id": "architecture",
+      "text": "# Kubernetes Architecture\n\nA Kubernetes cluster consists of a set of worker machines, called nodes, that run containerized applications. Every cluster has at least one worker node.\n\nThe worker node(s) host the Pods that are the components of the application workload. The control plane manages the worker nodes and the Pods in the cluster. In production environments, the control plane usually runs across multiple computers and a cluster usually runs multiple nodes, providing fault-tolerance and high availability.\nControl Plane Components",
+      "index": 0,
+      "metadata": {
+        "source": "architecture.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\architecture.md",
+        "title": "Kubernetes Architecture",
+        "size_bytes": 1606,
+        "chunk_index": 0,
+        "doc_id": "architecture"
+      }
+    },
+    {
+      "chunk_id": "9cd9ee030cccf38988e4c54b497594de2792b4ed4a62139a98aa55fa52e00ab7",
+      "doc_id": "architecture",
+      "text": "Control Plane Components\n\n- **kube-apiserver**: The API server exposes the Kubernetes API and serves as the front end for the control plane.\n- **etcd**: Consistent and highly-available key value store used as Kubernetes' backing store for all cluster data.\n- **kube-scheduler**: Watches for newly created Pods with no assigned node, and selects a node for them to run on.\n- **kube-controller-manager**: Runs controller processes, including node controller, job controller, and endpointslice controller.\n- **cloud-controller-manager**: Embeds cloud-specific control logic linking your cluster into your cloud provider's API.",
+      "index": 1,
+      "metadata": {
+        "source": "architecture.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\architecture.md",
+        "title": "Kubernetes Architecture",
+        "size_bytes": 1606,
+        "chunk_index": 1,
+        "doc_id": "architecture"
+      }
+    },
+    {
+      "chunk_id": "47f31e030290b86db1df406410f20d2527a67fbd02de394a190645e129e39c46",
+      "doc_id": "architecture",
+      "text": "-manager**: Embeds cloud-specific control logic linking your cluster into your cloud provider's API.\n## Node Components\n\nNode components run on every node, maintaining running pods and providing the Kubernetes runtime environment:\n- **kubelet**: An agent that runs on each node in the cluster, making sure containers are running in a Pod.\n- **kube-proxy**: A network proxy that runs on each node in your cluster, maintaining network rules on nodes.\n- **Container runtime**: The software that is responsible for running containers (such as containerd or CRI-O).",
+      "index": 2,
+      "metadata": {
+        "source": "architecture.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\architecture.md",
+        "title": "Kubernetes Architecture",
+        "size_bytes": 1606,
+        "chunk_index": 2,
+        "doc_id": "architecture"
+      }
+    },
+    {
+      "chunk_id": "9db49b951c990df9099d5a6544dca41d0cbc8cb004c2efe4d7c492030a568ffd",
+      "doc_id": "deployments",
+      "text": "# Kubernetes Deployments\n\nA Deployment provides declarative updates for Pods and ReplicaSets in Kubernetes.\n\nYou describe a desired state in a Deployment, and the Deployment Controller changes the actual state to the desired state at a controlled rate. You can define Deployments to create new ReplicaSets, or to remove existing Deployments and adopt all their resources with new Deployments.",
+      "index": 0,
+      "metadata": {
+        "source": "deployments.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\deployments.md",
+        "title": "Kubernetes Deployments",
+        "size_bytes": 1519,
+        "chunk_index": 0,
+        "doc_id": "deployments"
+      }
+    },
+    {
+      "chunk_id": "d24b88f9e20ef97d89e843f380dc7988e27c64f706e7487a426d5bb1e3a85e0c",
+      "doc_id": "deployments",
+      "text": "Use Cases for Deployments1. **Create a ReplicaSet to roll out Pods**: The Deployment creates a ReplicaSet in the background. Check the status of the rollout to see if it succeeds.\n2. **Declare the new state of Pods**: Update the PodTemplateSpec of the Deployment. A new ReplicaSet is created and the Deployment manages moving the Pods from the old ReplicaSet to the new one at a controlled rate.\n3. **Rollback to an earlier revision**: If the current state of the Deployment is not stable, you can roll back to an earlier Deployment revision.",
+      "index": 1,
+      "metadata": {
+        "source": "deployments.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\deployments.md",
+        "title": "Kubernetes Deployments",
+        "size_bytes": 1519,
+        "chunk_index": 1,
+        "doc_id": "deployments"
+      }
+    },
+    {
+      "chunk_id": "b5dbac1143636595589fda001964e62337126f87cd5dea79217f06759cacdf97",
+      "doc_id": "deployments",
+      "text": "current state of the Deployment is not stable, you can roll back to an earlier Deployment revision.\n4. **Scale up or scale down**: Scale the Deployment to facilitate more or fewer loads.\n5. **Pause and resume**: Pause the rollout before applying several updates to your PodTemplateSpec and then resume it to start a new rollout.",
+      "index": 2,
+      "metadata": {
+        "source": "deployments.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\deployments.md",
+        "title": "Kubernetes Deployments",
+        "size_bytes": 1519,
+        "chunk_index": 2,
+        "doc_id": "deployments"
+      }
+    },
+    {
+      "chunk_id": "793dcc36b6f5038f392907e64fb7aa95d6a896a5cabc612c96a08ed4299c58f3",
+      "doc_id": "deployments",
+      "text": "t before applying several updates to your PodTemplateSpec and then resume it to start a new rollout.\n## Rolling Update Strategy\n\nBy default, Kubernetes Deployments use the RollingUpdate strategy to ensure zero-downtime deployments. The Deployment ensures that only a certain number of Pods may be down while they are being updated (maxUnavailable), and that only a certain number of Pods may be created above the desired number of Pods (maxSurge).",
+      "index": 3,
+      "metadata": {
+        "source": "deployments.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\deployments.md",
+        "title": "Kubernetes Deployments",
+        "size_bytes": 1519,
+        "chunk_index": 3,
+        "doc_id": "deployments"
+      }
+    },
+    {
+      "chunk_id": "418b0327eb9d2cecdf16ed0412cc2a1b4b67ed1711bb4225cf2cd29fa24a777b",
+      "doc_id": "pods",
+      "text": "# Kubernetes Pods\n\nPods are the smallest deployable units of computing that you can create and manage in Kubernetes.\n\nA Pod is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers. A Pod's contents are always co-located and co-scheduled, and run in a shared context. A Pod models an application-specific \"logical host\": it contains one or more application containers which are relatively tightly coupled.",
+      "index": 0,
+      "metadata": {
+        "source": "pods.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\pods.md",
+        "title": "Kubernetes Pods",
+        "size_bytes": 1412,
+        "chunk_index": 0,
+        "doc_id": "pods"
+      }
+    },
+    {
+      "chunk_id": "0b4afb3701ee9d568e76255af8bc259d7a90fd172f5cce62d4bb32577b185395",
+      "doc_id": "pods",
+      "text": "\"logical host\": it contains one or more application containers which are relatively tightly coupled.\n## Shared Context in Pods\n\nThe shared context of a Pod is a set of Linux namespaces, cgroups, and potentially other facets of isolation - the same things that isolate a container. Within a Pod's context, the individual applications may have further sub-isolations applied.\n\nA Pod always runs on a Node. A Node is a worker machine in Kubernetes, managed by the control plane. Each Node is managed by the control plane and contains the services necessary to run Pods, including Kubelet, Kube-proxy, and the container runtime.",
+      "index": 1,
+      "metadata": {
+        "source": "pods.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\pods.md",
+        "title": "Kubernetes Pods",
+        "size_bytes": 1412,
+        "chunk_index": 1,
+        "doc_id": "pods"
+      }
+    },
+    {
+      "chunk_id": "42870cf6dcfa0e68d66991a00394091aa55afd623080539d17ca70c99b935cff",
+      "doc_id": "pods",
+      "text": "ntains the services necessary to run Pods, including Kubelet, Kube-proxy, and the container runtime.\n## Pod Networking\n\nEach Pod is assigned a unique IP address for each address family. Every container in a Pod shares the network namespace, including the IP address and network ports. Containers inside a Pod can communicate with one another using localhost. When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).",
+      "index": 2,
+      "metadata": {
+        "source": "pods.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\pods.md",
+        "title": "Kubernetes Pods",
+        "size_bytes": 1412,
+        "chunk_index": 2,
+        "doc_id": "pods"
+      }
+    },
+    {
+      "chunk_id": "dc9ca0493f4ed6bcf0f942e2d1ac92a3e6a75cd68cf31abab7eb8ac9eea6df45",
+      "doc_id": "services",
+      "text": "# Kubernetes Services\n\nIn Kubernetes, a Service is an abstract way to expose an application running on a set of Pods as a network service.\n\nWith Kubernetes you don't need to modify your application to use an unfamiliar service discovery mechanism. Kubernetes gives Pods their own IP addresses and a single DNS name for a set of Pods, and can load-balance across them.",
+      "index": 0,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 1302,
+        "chunk_index": 0,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "78ac621618142134f943f935422f0af5584f7e5a06d2ea1ed75b3e13afaf3312",
+      "doc_id": "services",
+      "text": "Service Types\n\nKubernetes ServiceTypes allow you to specify what kind of Service you want:- **ClusterIP**: Exposes the Service on an internal IP in the cluster. This type makes the Service only reachable from within the cluster. This is the default ServiceType.\n- **NodePort**: Exposes the Service on each Node's IP at a static port (the NodePort). A ClusterIP Service, to which the NodePort Service routes, is automatically created. You'll be able to contact the NodePort Service, from outside the cluster, by requesting `<NodeIP>:<NodePort>`.",
+      "index": 1,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 1302,
+        "chunk_index": 1,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "10d8775a4fff158a2d26b7f3d313787989939f3994b73d8fa4f12a8d5b22d06d",
+      "doc_id": "services",
+      "text": "able to contact the NodePort Service, from outside the cluster, by requesting `<NodeIP>:<NodePort>`.\n- **LoadBalancer**: Exposes the Service externally using a cloud provider's load balancer. NodePort and ClusterIP Services, to which the external load balancer routes, are automatically created.\n- **ExternalName**: Maps the Service to the contents of the externalName field (e.g. `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.",
+      "index": 2,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 1302,
+        "chunk_index": 2,
+        "doc_id": "services"
+      }
+    }
+  ]
+}

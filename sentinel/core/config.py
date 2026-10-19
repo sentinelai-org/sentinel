@@ -67,10 +67,28 @@ class Settings(BaseSettings):
         default="sentinel_workers", description="Redis consumer group for background ingest workers"
     )
 
-    # RAG & Context Grading
-    retrieval_top_k: int = Field(default=4, description="Number of top chunks to retrieve")
+    # RAG, Hybrid Search & Re-ranking (RAG Precision)
+    retrieval_top_k: int = Field(default=4, description="Number of top chunks to pass to LLM")
     score_threshold: float = Field(
         default=0.45, description="Minimum similarity score threshold for context grading"
+    )
+    hybrid_search_enabled: bool = Field(
+        default=True, description="Enable hybrid dense + BM25 sparse keyword search via RRF"
+    )
+    hybrid_rrf_k: int = Field(default=60, description="Reciprocal Rank Fusion smoothing constant k")
+    retrieval_candidates_k: int = Field(
+        default=20, description="Number of candidate chunks retrieved before re-ranking"
+    )
+    reranker_enabled: bool = Field(
+        default=True, description="Enable Cross-Encoder re-ranking on retrieved candidates"
+    )
+    reranker_model: str = Field(
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+        description="Cross-encoder model identifier for re-ranking (e.g. BAAI/bge-reranker-base)",
+    )
+    bm25_index_path: str = Field(
+        default="data/bm25_index.json",
+        description="Local path to serialized BM25 sparse index",
     )
 
     # OpenTelemetry Distributed Tracing (Phase 2)

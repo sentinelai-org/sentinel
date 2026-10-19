@@ -19,9 +19,12 @@ flowchart TD
     Cache -->|Miss| SemanticCache{Semantic Cache: Qdrant}
     
     SemanticCache -->|Cosine >= 0.90| ReturnSemantic[Return Semantic Match]
-    SemanticCache -->|Miss| Retrieve[Retrieve Relevant Chunks: Qdrant]
+    SemanticCache -->|Miss| Hybrid[Hybrid Search: Dense Vectors + BM25 Sparse]
     
-    Retrieve --> Grade{Context Grading >= 0.45}
+    Hybrid --> RRF[Reciprocal Rank Fusion: Top 20 Candidates]
+    RRF --> Rerank[Cross-Encoder Re-Ranker: MiniLM / BGE-Reranker]
+    Rerank --> Grade{Context Grading >= 0.45: Top 4 Chunks}
+    
     Grade -->|No match| Refusal[Polite Out-of-Scope Refusal]
     Grade -->|Match| Route[Cost-Aware Router]
     
@@ -39,11 +42,12 @@ flowchart TD
 ```
 
 ### Request Flow
-1. **Sanitization & Cache Lookup**: The gateway checks inputs for prompt injection and masks PII. It then queries a Redis exact-match cache (`SHA-256`) followed by a Qdrant semantic cache.
-2. **Retrieval & Context Grading**: If un-cached, local embeddings (`BAAI/bge-small-en-v1.5`) retrieve top matches from Qdrant. A grading node drops low-confidence chunks.
+1. **Sanitization & Cache Lookup**: The gateway checks inputs for prompt injection and masks PII. It queries a Redis exact-match cache (`SHA-256`) followed by a Qdrant semantic cache.
+2. **Hybrid Search & Re-Ranking**: If un-cached, Sentinel combines dense vector similarity (`BAAI/bge-small-en-v1.5`) with sparse BM25Okapi keyword search via Reciprocal Rank Fusion (RRF). A lightweight Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2` or `BAAI/bge-reranker-base`) scores the top-20 retrieved candidates down to top-4 high-precision chunks, ensuring exact technical lookups (e.g. error codes like `ErrImagePull` or CLI flags like `--kubelet-extra-args`) are never diluted.
 3. **Resilient Routing**: Queries route to Google Gemini by default. If Gemini returns `429 Too Many Requests` or fails after 3 exponential backoff retries, traffic routes to a local Ollama instance (`qwen2.5:3b`).
 4. **Groundedness Gate**: Before any response leaves the gateway, a runtime evaluator computes token overlap between the answer and retrieved source text. If groundedness is under 70%, Sentinel discards the answer to prevent hallucinations.
-5. **Background Ingestion**: Documents uploaded via `/v1/ingest/jobs` go into a Redis Stream (`sentinel:stream:ingest_jobs`) and are processed asynchronously by worker processes.
+5. **Background Ingestion**: Documents uploaded via `/v1/ingest/jobs` go into a Redis Stream (`sentinel:stream:ingest_jobs`) and are processed asynchronously by worker processes to update both Qdrant and the BM25 inverted index.
+
 
 ---
 
@@ -79,7 +83,11 @@ uvicorn sentinel.main:app --reload --port 8000
 
 The web UI is accessible at `http://localhost:8000/ui` and API documentation at `http://localhost:8000/docs`.
 
+### Enterprise SaaS & API Integration
+To integrate Sentinel into your enterprise web applications, microservices, mobile apps, or internal Slack/Teams bots as an API-first RAG Gateway (SaaS), check out the **[Enterprise SaaS & API Integration Guide](docs/ENTERPRISE_SAAS_INTEGRATION.md)**. It includes complete TypeScript/React streaming hooks, Python SDK clients, async background document ingestion endpoints, and multi-tenant isolation architectures.
+
 ---
+
 
 ### 2. Docker Compose
 
