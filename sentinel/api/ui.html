@@ -215,11 +215,21 @@
             display: none;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .tab-view.active {
+            display: block;
+        }
+
+        #view-playground.tab-view {
+            overflow: hidden;
+        }
+
+        #view-playground.tab-view.active {
             display: flex;
+            flex-direction: row;
         }
 
         /* VIEW 1: PLAYGROUND & CHAT */
@@ -743,15 +753,14 @@
 
         /* VIEW 2: INGESTION STUDIO */
         .dashboard-container {
-            flex: 1;
-            padding: 32px;
-            overflow-y: auto;
-            max-width: 1100px;
-            margin: 0 auto;
             width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 36px 36px 80px 36px;
             display: flex;
             flex-direction: column;
             gap: 28px;
+            box-sizing: border-box;
         }
 
         .section-header {
@@ -1025,72 +1034,91 @@
         .env-badge {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             font-size: 0.72rem;
-            font-weight: 700;
-            padding: 3px 8px;
+            font-weight: 600;
+            padding: 3px 9px;
             border-radius: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
         .env-badge.test {
-            background: rgba(245, 158, 11, 0.15);
+            background: rgba(245, 158, 11, 0.12);
             color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.25);
         }
         .env-badge.production {
-            background: rgba(16, 185, 129, 0.15);
+            background: rgba(16, 185, 129, 0.12);
             color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            border: 1px solid rgba(16, 185, 129, 0.25);
         }
         .status-pill {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 3px 9px;
+            gap: 6px;
+            font-size: 0.73rem;
+            font-weight: 600;
+            padding: 3px 10px;
             border-radius: 9999px;
-            text-transform: uppercase;
+            letter-spacing: 0.2px;
         }
         .status-pill.authorized {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.35);
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.25);
         }
         .status-pill.pending {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.35);
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.25);
         }
         .status-pill.suspended {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+        .status-dot-sm {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .status-dot-sm.authorized {
+            background: #10b981;
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+        }
+        .status-dot-sm.pending {
+            background: #f59e0b;
+            box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+        }
+        .status-dot-sm.suspended {
+            background: #ef4444;
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
         }
         .enterprise-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 22px;
+            background: #0d1424;
+            border: 1px solid #1e293b;
+            border-radius: 14px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            transition: border-color 0.2s, transform 0.2s;
+            gap: 18px;
+            transition: all 0.2s ease;
         }
         .enterprise-card:hover {
-            border-color: var(--border-highlight);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         }
         .enterprise-header {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
+            gap: 14px;
         }
         .enterprise-title-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
         }
         .enterprise-name {
             font-size: 1.15rem;
@@ -1098,28 +1126,32 @@
             color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         .enterprise-sub {
             font-size: 0.78rem;
             color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
         }
         .env-boxes-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            gap: 16px;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .env-boxes-grid { grid-template-columns: 1fr; }
         }
         .env-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
+            background: #080d19;
+            border: 1px solid #1e293b;
             border-radius: 12px;
-            padding: 14px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .env-box-header {
             display: flex;
@@ -1130,10 +1162,10 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--bg-input);
-            padding: 6px 10px;
+            background: #040711;
+            padding: 8px 12px;
             border-radius: 8px;
-            border: 1px solid var(--border-subtle);
+            border: 1px solid #1e293b;
         }
         .key-code {
             font-family: 'JetBrains Mono', monospace;
@@ -1149,28 +1181,31 @@
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: color 0.15s;
+            padding: 5px;
+            border-radius: 6px;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .btn-icon:hover {
             color: #ffffff;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
         }
         .admin-actions-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-subtle);
+            gap: 12px;
+            padding-top: 14px;
+            border-top: 1px solid #1e293b;
         }
         .btn-authorize {
-            background: linear-gradient(135deg, #059669, #10b981);
+            background: #0284c7;
             color: #ffffff;
-            border: none;
-            padding: 8px 14px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 7px 15px;
             border-radius: 8px;
             font-size: 0.82rem;
             font-weight: 600;
@@ -1178,17 +1213,17 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
         }
         .btn-authorize:hover {
-            opacity: 0.9;
-            box-shadow: 0 0 12px var(--success-glow);
+            background: #0369a1;
+            box-shadow: 0 2px 12px rgba(2, 132, 199, 0.35);
         }
         .btn-revoke {
-            background: rgba(239, 68, 68, 0.15);
+            background: rgba(239, 68, 68, 0.08);
             color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            padding: 8px 14px;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 7px 15px;
             border-radius: 8px;
             font-size: 0.82rem;
             font-weight: 600;
@@ -1199,29 +1234,40 @@
             transition: all 0.2s;
         }
         .btn-revoke:hover {
-            background: rgba(239, 68, 68, 0.25);
+            background: rgba(239, 68, 68, 0.18);
         }
-        .filter-pills {
-            display: flex;
+        .filter-segmented {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            background: #080d19;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            padding: 3px;
+            gap: 2px;
         }
-        .filter-pill {
-            padding: 5px 12px;
+        .filter-segmented button {
+            padding: 6px 14px;
             font-size: 0.78rem;
-            font-weight: 600;
-            border-radius: 9999px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
+            font-weight: 500;
+            color: #94a3b8;
+            background: transparent;
+            border: none;
+            border-radius: 7px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-        .filter-pill.active {
-            background: var(--accent);
+        .filter-segmented button:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .filter-segmented button.active {
+            background: #1e293b;
             color: #ffffff;
-            border-color: var(--accent);
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
         @media (max-width: 900px) {
@@ -1309,15 +1355,24 @@
 
                             <div class="prompt-grid">
                                 <div class="prompt-card" onclick="usePrompt('How do Kubernetes Deployments handle rolling updates?')">
-                                    <h4>🔄 Rolling Updates</h4>
+                                    <h4 style="display:flex; align-items:center; gap:6px;">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                        <span>Rolling Updates</span>
+                                    </h4>
                                     <p>maxSurge, maxUnavailable & zero-downtime rules</p>
                                 </div>
                                 <div class="prompt-card" onclick="usePrompt('Explain Kubernetes Pod storage and multi-container sharing.')">
-                                    <h4>📦 Pods & Volumes</h4>
+                                    <h4 style="display:flex; align-items:center; gap:6px;">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                        <span>Pods & Volumes</span>
+                                    </h4>
                                     <p>Volume mounts, emptyDir, and container isolation</p>
                                 </div>
                                 <div class="prompt-card" onclick="usePrompt('How do Services load balance traffic across Pod endpoints?')">
-                                    <h4>🌐 Cluster Services</h4>
+                                    <h4 style="display:flex; align-items:center; gap:6px;">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                        <span>Cluster Services</span>
+                                    </h4>
                                     <p>ClusterIP, kube-proxy iptables, and selectors</p>
                                 </div>
                             </div>
@@ -1518,7 +1573,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                     <div class="health-card">
                         <div class="health-card-header">
                             <div class="health-card-name">
-                                <span>🛡️</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                 <span>FastAPI Gateway</span>
                             </div>
                             <span class="health-status-badge healthy" id="health-gw">ONLINE</span>
@@ -1529,7 +1584,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                     <div class="health-card">
                         <div class="health-card-header">
                             <div class="health-card-name">
-                                <span>⚡</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="5" cy="5" r="2"/><line x1="7" y1="7" x2="10" y2="10"/><line x1="14" y1="14" x2="17" y2="17"/><line x1="14" y1="10" x2="17" y2="7"/><line x1="7" y1="17" x2="10" y2="14"/></svg>
                                 <span>Qdrant Vector DB</span>
                             </div>
                             <span class="health-status-badge healthy" id="health-qdrant">CONNECTED</span>
@@ -1540,7 +1595,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                     <div class="health-card">
                         <div class="health-card-header">
                             <div class="health-card-name">
-                                <span>💾</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
                                 <span>Redis Cache & Queue</span>
                             </div>
                             <span class="health-status-badge healthy" id="health-redis">CONNECTED</span>
@@ -1551,7 +1606,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                     <div class="health-card">
                         <div class="health-card-header">
                             <div class="health-card-name">
-                                <span>🔭</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                                 <span>OpenTelemetry (Jaeger)</span>
                             </div>
                             <a href="http://localhost:16686" target="_blank" class="health-status-badge healthy" style="text-decoration:none;">VIEW TRACES ↗</a>
@@ -1564,7 +1619,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
 
         <!-- TAB 5: ENTERPRISE & COMMERCIALIZATION ADMIN -->
         <div class="tab-view" id="view-enterprise">
-            <div class="dashboard-container" style="max-width: 1200px;">
+            <div class="dashboard-container">
                 <div class="section-header" style="flex-direction:row; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
                     <div>
                         <div class="section-title">Enterprise Commercialization & Authorization Console</div>
@@ -1572,7 +1627,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                     </div>
                     <button class="btn-primary" onclick="openOnboardModal()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                        <span>+ Onboard Enterprise</span>
+                        <span>Onboard Enterprise</span>
                     </button>
                 </div>
 
@@ -1602,11 +1657,11 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
 
                 <!-- Environment & Status Filter -->
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <div class="filter-pills" id="ent-status-filter">
-                        <button class="filter-pill active" onclick="filterEnterprises('all', this)">All Clients</button>
-                        <button class="filter-pill" onclick="filterEnterprises('pending', this)">⏳ Pending Approval</button>
-                        <button class="filter-pill" onclick="filterEnterprises('authorized', this)">✅ Authorized Live</button>
-                        <button class="filter-pill" onclick="filterEnterprises('suspended', this)">🚫 Suspended</button>
+                    <div class="filter-segmented" id="ent-status-filter">
+                        <button class="active" onclick="filterEnterprises('all', this)">All Organizations</button>
+                        <button onclick="filterEnterprises('pending', this)"><span class="status-dot-sm pending"></span> Pending Review</button>
+                        <button onclick="filterEnterprises('authorized', this)"><span class="status-dot-sm authorized"></span> Production Live</button>
+                        <button onclick="filterEnterprises('suspended', this)"><span class="status-dot-sm suspended"></span> Suspended</button>
                     </div>
                     <div style="font-size:0.8rem; color:var(--text-secondary);">
                         Auto-refreshing via <code style="color:var(--accent);">/v1/admin/enterprises</code>
@@ -1622,10 +1677,13 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                 <div class="card-panel" style="margin-top: 14px; border-color: rgba(14, 165, 233, 0.4);">
                     <div class="panel-heading">
                         <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:1.1rem;">🧪</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
                             <span>Enterprise API Diagnostic Sandbox & Production Authorization Verifier</span>
                         </div>
-                        <span class="env-badge test" id="runner-env-badge">TEST (SANDBOX)</span>
+                        <span class="env-badge test" id="runner-env-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><path d="M10 2v7.31L4.14 19.3A2 2 0 0 0 5.86 22h12.28a2 2 0 0 0 1.72-2.7L14 9.31V2"/></svg>
+                            <span>SANDBOX (TEST)</span>
+                        </span>
                     </div>
                     <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">
                         Simulate API calls as any onboarded enterprise client to test their integration before or after authorizing them. If an enterprise is in <b>Pending</b> status, calls to the <b>Production</b> environment will be automatically rejected by Sentinel's Authorization Gate (HTTP 403 Forbidden).
@@ -1641,11 +1699,13 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Target Environment:</label>
                             <div style="display:flex; gap:8px;">
-                                <button type="button" class="btn-ghost" id="runner-btn-test" onclick="setRunnerEnv('test')" style="flex:1; background:rgba(245, 158, 11, 0.15); color:#fbbf24; border-color:rgba(245, 158, 11, 0.4);">
-                                    🧪 Sandbox
+                                <button type="button" class="btn-ghost" id="runner-btn-test" onclick="setRunnerEnv('test')" style="flex:1; background:rgba(245, 158, 11, 0.15); color:#fbbf24; border-color:rgba(245, 158, 11, 0.4); display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31L4.14 19.3A2 2 0 0 0 5.86 22h12.28a2 2 0 0 0 1.72-2.7L14 9.31V2"/></svg>
+                                    <span>Sandbox</span>
                                 </button>
-                                <button type="button" class="btn-ghost" id="runner-btn-prod" onclick="setRunnerEnv('production')" style="flex:1;">
-                                    🚀 Production
+                                <button type="button" class="btn-ghost" id="runner-btn-prod" onclick="setRunnerEnv('production')" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <span>Production</span>
                                 </button>
                             </div>
                         </div>
@@ -1680,7 +1740,10 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
     <!-- Onboard Enterprise Modal -->
     <div class="modal-overlay" id="onboard-modal">
         <div class="modal-box" style="max-width: 520px;">
-            <div class="modal-title">🏢 Onboard New Enterprise Client</div>
+            <div class="modal-title" style="display:flex; align-items:center; gap:10px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M6 10h2"/><path d="M6 14h2"/><path d="M6 18h2"/><path d="M16 10h2"/><path d="M16 14h2"/><path d="M16 18h2"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/><path d="m3 7 9-4 9 4"/></svg>
+                <span>Onboard New Enterprise Client</span>
+            </div>
             <p style="font-size:0.82rem; color:var(--text-secondary);">
                 Register a new enterprise client. Sentinel will automatically provision both a Sandbox (Test) API key and a Production API key with rate limits.
             </p>
@@ -2269,7 +2332,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
 
         function filterEnterprises(status, btn) {
             currentEntFilter = status;
-            document.querySelectorAll('#ent-status-filter .filter-pill').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#ent-status-filter button').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
             renderEnterprises();
         }
@@ -2286,7 +2349,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
             if (list.length === 0) {
                 container.innerHTML = `
                     <div style="background:var(--bg-surface); padding:32px; border-radius:14px; text-align:center; color:var(--text-secondary); border:1px solid var(--border-subtle);">
-                        No enterprises found matching the <b>${currentEntFilter}</b> filter.
+                        No enterprises found matching the <b>${escapeHtml(currentEntFilter)}</b> filter.
                     </div>
                 `;
                 return;
@@ -2295,12 +2358,12 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
             container.innerHTML = list.map(ent => {
                 const isAuth = ent.status === 'authorized' && ent.production_allowed;
                 const statusPill = isAuth 
-                    ? `<span class="status-pill authorized">✅ Production Live</span>`
+                    ? `<span class="status-pill authorized"><span class="status-dot-sm authorized"></span> Production Live</span>`
                     : (ent.status === 'suspended'
-                        ? `<span class="status-pill suspended">🚫 Suspended</span>`
-                        : `<span class="status-pill pending">⏳ Pending Approval</span>`);
+                        ? `<span class="status-pill suspended"><span class="status-dot-sm suspended"></span> Suspended</span>`
+                        : `<span class="status-pill pending"><span class="status-dot-sm pending"></span> Pending Clearance</span>`);
 
-                const planBadge = `<span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:6px; background:rgba(14,165,233,0.15); color:#38bdf8; border:1px solid rgba(14,165,233,0.3);">${ent.plan}</span>`;
+                const planBadge = `<span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:6px; background:rgba(14,165,233,0.15); color:#38bdf8; border:1px solid rgba(14,165,233,0.3);">${escapeHtml(ent.plan)}</span>`;
 
                 return `
                     <div class="enterprise-card" id="card-${ent.id}">
@@ -2312,7 +2375,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                                     ${statusPill}
                                 </div>
                                 <div class="enterprise-sub">
-                                    <span>ID: <code>${ent.id}</code></span> • 
+                                    <span>ID: <code>${escapeHtml(ent.id)}</code></span> • 
                                     <span>Contact: <a href="mailto:${escapeHtml(ent.contact_email)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(ent.contact_email)}</a></span> • 
                                     <span>Rate Limit: <b>${ent.rate_limit_per_minute} req/min</b></span>
                                 </div>
@@ -2326,7 +2389,10 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                             <div class="env-box">
                                 <div class="env-box-header">
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <span class="env-badge test">🧪 Sandbox / Test</span>
+                                        <span class="env-badge test">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><path d="M10 2v7.31L4.14 19.3A2 2 0 0 0 5.86 22h12.28a2 2 0 0 0 1.72-2.7L14 9.31V2"/></svg>
+                                            <span>SANDBOX / TEST</span>
+                                        </span>
                                         <span style="font-size:0.75rem; color:var(--text-secondary);">${ent.test_requests_count || 0} calls</span>
                                     </div>
                                     <span style="font-size:0.75rem; color:var(--success); font-weight:600;">Active</span>
@@ -2338,11 +2404,13 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                                     </button>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem;" onclick="rotateKey('${ent.id}', 'test')">
-                                        🔄 Rotate Test Key
+                                    <button class="btn-ghost" style="padding:5px 10px; font-size:0.74rem; display:inline-flex; align-items:center; gap:6px;" onclick="rotateKey('${ent.id}', 'test')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                        <span>Rotate Key</span>
                                     </button>
-                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem; color:#fbbf24; border-color:rgba(245,158,11,0.3);" onclick="openInTestRunner('${ent.id}', 'test')">
-                                        ⚡ Test Sandbox
+                                    <button class="btn-ghost" style="padding:5px 10px; font-size:0.74rem; color:#fbbf24; border-color:rgba(245,158,11,0.3); display:inline-flex; align-items:center; gap:6px;" onclick="openInTestRunner('${ent.id}', 'test')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                        <span>Test Sandbox</span>
                                     </button>
                                 </div>
                             </div>
@@ -2351,7 +2419,10 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                             <div class="env-box" style="${!isAuth ? 'opacity:0.85; border-color:rgba(245,158,11,0.3);' : 'border-color:rgba(16,185,129,0.3);'}">
                                 <div class="env-box-header">
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <span class="env-badge production">🚀 Live Production</span>
+                                        <span class="env-badge production">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                            <span>LIVE PRODUCTION</span>
+                                        </span>
                                         <span style="font-size:0.75rem; color:var(--text-secondary);">${ent.live_requests_count || 0} calls</span>
                                     </div>
                                     <span style="font-size:0.75rem; font-weight:600; color:${isAuth ? 'var(--success)' : 'var(--warning)'};">
@@ -2365,11 +2436,13 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                                     </button>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem;" onclick="rotateKey('${ent.id}', 'production')">
-                                        🔄 Rotate Live Key
+                                    <button class="btn-ghost" style="padding:5px 10px; font-size:0.74rem; display:inline-flex; align-items:center; gap:6px;" onclick="rotateKey('${ent.id}', 'production')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                        <span>Rotate Key</span>
                                     </button>
-                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem; color:#34d399; border-color:rgba(16,185,129,0.3);" onclick="openInTestRunner('${ent.id}', 'production')">
-                                        ⚡ Test Production
+                                    <button class="btn-ghost" style="padding:5px 10px; font-size:0.74rem; color:#34d399; border-color:rgba(16,185,129,0.3); display:inline-flex; align-items:center; gap:6px;" onclick="openInTestRunner('${ent.id}', 'production')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                        <span>Test Production</span>
                                     </button>
                                 </div>
                             </div>
@@ -2378,7 +2451,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                         <!-- Admin Actions Bar -->
                         <div class="admin-actions-bar">
                             <div style="font-size:0.76rem; color:var(--text-secondary);">
-                                ${ent.authorized_at ? `Authorized by <b>${escapeHtml(ent.authorized_by || 'admin')}</b> on ${new Date(ent.authorized_at).toLocaleDateString()}` : '⏳ Awaiting administrator production clearance'}
+                                ${ent.authorized_at ? `Authorized by <b>${escapeHtml(ent.authorized_by || 'admin')}</b> on ${new Date(ent.authorized_at).toLocaleDateString()}` : '<span style="display:inline-flex; align-items:center; gap:6px;"><span class="status-dot-sm pending"></span> Awaiting administrator production clearance</span>'}
                             </div>
                             <div style="display:flex; gap:8px;">
                                 ${!isAuth ? `
@@ -2403,7 +2476,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
             const select = document.getElementById('runner-enterprise-select');
             if (!select) return;
             select.innerHTML = allEnterprises.map(e => `
-                <option value="${e.id}">${e.name} (${e.plan.toUpperCase()} • ${e.status.toUpperCase()})</option>
+                <option value="${e.id}">${escapeHtml(e.name)} (${e.plan.toUpperCase()} • ${e.status.toUpperCase()})</option>
             `).join('');
             onRunnerSelectChange();
         }
@@ -2418,7 +2491,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
             if (previewEl) {
                 previewEl.innerHTML = `
                     Active Key: <code style="color:#38bdf8; font-family:monospace;">${key.slice(0, 16)}...${key.slice(-4)}</code>
-                    (${runnerEnv === 'test' ? '🧪 Sandbox' : (ent.production_allowed ? '🚀 Production' : '⚠️ Production [Unauthorized]')})
+                    (${runnerEnv === 'test' ? 'Sandbox Environment' : (ent.production_allowed ? 'Live Production' : 'Production [Unauthorized]')})
                 `;
             }
         }
@@ -2437,7 +2510,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                 btnProd.style.color = 'var(--text-secondary)';
                 btnProd.style.borderColor = 'var(--border-highlight)';
                 if (badge) {
-                    badge.innerText = 'TEST (SANDBOX)';
+                    badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><path d="M10 2v7.31L4.14 19.3A2 2 0 0 0 5.86 22h12.28a2 2 0 0 0 1.72-2.7L14 9.31V2"/></svg> <span>SANDBOX (TEST)</span>`;
                     badge.className = 'env-badge test';
                 }
             } else {
@@ -2448,7 +2521,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                 btnTest.style.color = 'var(--text-secondary)';
                 btnTest.style.borderColor = 'var(--border-highlight)';
                 if (badge) {
-                    badge.innerText = 'LIVE PRODUCTION';
+                    badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>LIVE PRODUCTION</span>`;
                     badge.className = 'env-badge production';
                 }
             }
@@ -2505,10 +2578,10 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                         <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.4); border-radius:12px; padding:18px;">
                             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <span style="font-size:1.2rem;">🚫</span>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                                     <span style="font-weight:700; color:#f87171; font-size:0.95rem;">HTTP 403 FORBIDDEN: Authorization Gate Enforcement</span>
                                 </div>
-                                <span class="status-pill pending">APPROVAL REQUIRED</span>
+                                <span class="status-pill pending"><span class="status-dot-sm pending"></span> APPROVAL REQUIRED</span>
                             </div>
                             <p style="font-size:0.85rem; color:#fca5a5; line-height:1.5;">
                                 ${escapeHtml(data.message || data.error)}
@@ -2516,7 +2589,8 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                             <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(239,68,68,0.2); display:flex; justify-content:space-between; align-items:center;">
                                 <span style="font-size:0.78rem; color:var(--text-secondary);">Client: <b>${escapeHtml(data.enterprise?.name || enterpriseId)}</b></span>
                                 <button class="btn-authorize" onclick="authorizeEnterprise('${enterpriseId}')">
-                                    ✅ Authorize This Enterprise for Production Now
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                    <span>Authorize Enterprise for Production</span>
                                 </button>
                             </div>
                         </div>
@@ -2529,11 +2603,11 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
                         <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:14px;">
                             <div style="display:flex; align-items:center; justify-content:space-between;">
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <span style="font-size:1.1rem;">✅</span>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                     <span style="font-weight:700; color:#ffffff;">HTTP 200 OK — Grounded Answer Delivered</span>
                                 </div>
                                 <div style="display:flex; gap:6px;">
-                                    <span class="status-pill authorized">Grounded: ${scorePct}</span>
+                                    <span class="status-pill authorized"><span class="status-dot-sm authorized"></span> Grounded: ${scorePct}</span>
                                     <span class="env-badge ${data.environment}">${data.environment.toUpperCase()}</span>
                                 </div>
                             </div>
