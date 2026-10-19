@@ -280,9 +280,7 @@ class AgentNodeHandler:
                 f"[Source: {doc['source']} (Score: {doc['score']:.2f})]\n{doc['text']}"
                 for doc in documents
             )
-            history_section = (
-                f"Conversation History:\n{history_text}\n\n" if history_text else ""
-            )
+            history_section = f"Conversation History:\n{history_text}\n\n" if history_text else ""
             prompt = (
                 f"Context:\n{context_blocks}\n\n"
                 f"{history_section}"

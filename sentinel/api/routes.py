@@ -542,9 +542,7 @@ async def chat_stream(
             f"[Source: {doc.metadata.get('source', 'unknown')} (Score: {doc.score:.2f})]\n{doc.text}"
             for doc in relevant_docs
         )
-        history_section = (
-            f"Conversation History:\n{history_text}\n\n" if history_text else ""
-        )
+        history_section = f"Conversation History:\n{history_text}\n\n" if history_text else ""
         prompt = (
             f"Context:\n{context_blocks}\n\n"
             f"{history_section}"
@@ -628,9 +626,7 @@ async def chat_stream(
 
         # Save turn to conversational session memory
         await session_manager.append_message(session_id, "user", payload.question)
-        await session_manager.append_message(
-            session_id, "assistant", full_answer, sources=sources
-        )
+        await session_manager.append_message(session_id, "assistant", full_answer, sources=sources)
 
         yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
 
@@ -946,7 +942,9 @@ async def admin_test_query(
             "production_allowed": ent.production_allowed,
         },
         "answer": f"[Sentinel Diagnostic Response for {ent.name}]: Query executed successfully in {body.environment} mode.",
-        "sources": [{"source": "deployments.md", "content": "Deployments documentation", "score": 0.95}],
+        "sources": [
+            {"source": "deployments.md", "content": "Deployments documentation", "score": 0.95}
+        ],
         "meta": {
             "latency_ms": round(elapsed_ms, 2),
             "groundedness_score": 0.95,
@@ -957,4 +955,3 @@ async def admin_test_query(
             "api_key_used": f"{api_key[:12]}...{api_key[-4:]}",
         },
     }
-

@@ -1,5 +1,7 @@
 """Unit tests for Enterprise Tenancy, Commercialization, and Admin Authorization Gates."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -7,6 +9,7 @@ from sentinel.core.config import Settings
 from sentinel.core.tenancy import EnterpriseCreateRequest, EnterpriseManager
 from sentinel.llm.fake import FakeProvider
 from sentinel.main import build_app
+from tests.conftest import InMemoryResponseCache
 
 
 @pytest.fixture
@@ -88,13 +91,8 @@ async def test_enterprise_manager_lifecycle():
     assert new_test_key.startswith("sk_test_")
 
 
-from tests.conftest import InMemoryResponseCache, InMemoryVectorStore
-
-
 @pytest.mark.asyncio
-async def test_admin_api_endpoints(
-    fake_llm: FakeProvider, in_memory_cache: InMemoryResponseCache
-):
+async def test_admin_api_endpoints(fake_llm: FakeProvider, in_memory_cache: InMemoryResponseCache):
     """Test /v1/admin/enterprises endpoints."""
     settings = Settings(
         api_key_auth_enabled=True,
@@ -103,7 +101,6 @@ async def test_admin_api_endpoints(
         guardrails_enabled=False,
         groundedness_gate_enabled=False,
     )
-    from unittest.mock import AsyncMock, MagicMock
 
     app = build_app(settings=settings, override_primary_llm=fake_llm)
     app.state.cache = in_memory_cache

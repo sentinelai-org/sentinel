@@ -18,7 +18,7 @@ class MockEmbedder:
     def __init__(self, dimension: int = 384) -> None:
         self.dimension = dimension
 
-    def embed_text(self, text: str) -> list[float]:
+    def embed_text(self, _text: str) -> list[float]:
         return [0.1] * self.dimension
 
 

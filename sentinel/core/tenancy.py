@@ -6,7 +6,6 @@ API key generation (sk_test_ and sk_live_), and admin authorization gates.
 
 from __future__ import annotations
 
-import json
 import secrets
 from datetime import UTC, datetime
 from typing import Any
@@ -25,12 +24,12 @@ class Enterprise(BaseModel):
     name: str = Field(description="Company or organization name")
     contact_email: str = Field(description="Technical or admin contact email")
     plan: str = Field(default="growth", description="Subscription tier: trial, growth, enterprise")
-    status: str = Field(
-        default="pending", description="Status: pending, authorized, or suspended"
-    )
+    status: str = Field(default="pending", description="Status: pending, authorized, or suspended")
     test_api_key: str = Field(description="Sandbox / Test environment API key (sk_test_...)")
     live_api_key: str = Field(description="Production environment API key (sk_live_...)")
-    test_allowed: bool = Field(default=True, description="Whether test / sandbox queries are permitted")
+    test_allowed: bool = Field(
+        default=True, description="Whether test / sandbox queries are permitted"
+    )
     production_allowed: bool = Field(
         default=False, description="Whether live production queries are permitted"
     )
@@ -41,7 +40,9 @@ class Enterprise(BaseModel):
     )
     created_at: str = Field(description="ISO timestamp of account creation")
     authorized_at: str | None = Field(default=None, description="ISO timestamp of admin approval")
-    authorized_by: str | None = Field(default=None, description="Admin identifier who approved access")
+    authorized_by: str | None = Field(
+        default=None, description="Admin identifier who approved access"
+    )
     notes: str | None = Field(default=None, description="Commercial or compliance notes")
 
 
@@ -59,7 +60,9 @@ class EnterpriseAuthorizeRequest(BaseModel):
     """Payload for admin authorizing an enterprise for production."""
 
     admin_user: str = Field(default="admin@sentinel.internal", description="Admin name or email")
-    rate_limit_per_minute: int | None = Field(default=None, description="Optional updated rate limit")
+    rate_limit_per_minute: int | None = Field(
+        default=None, description="Optional updated rate limit"
+    )
     notes: str | None = None
 
 
@@ -261,9 +264,7 @@ class EnterpriseManager:
         )
         return ent, new_key
 
-    def validate_key(
-        self, api_key: str
-    ) -> tuple[bool, Enterprise | None, str, bool, str]:
+    def validate_key(self, api_key: str) -> tuple[bool, Enterprise | None, str, bool, str]:
         """Validate an incoming API key.
 
         Returns:

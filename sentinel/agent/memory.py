@@ -112,9 +112,7 @@ class SessionManager:
         limit = (max_turns or self.max_turns) * 2
         return history[-limit:] if len(history) > limit else history
 
-    async def format_history_for_prompt(
-        self, session_id: str, max_turns: int | None = None
-    ) -> str:
+    async def format_history_for_prompt(self, session_id: str, max_turns: int | None = None) -> str:
         """Format recent conversation history as readable dialog text for LLM context."""
         recent_messages = await self.get_recent_turns(session_id, max_turns)
         if not recent_messages:

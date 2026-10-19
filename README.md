@@ -227,26 +227,32 @@ for src in response.sources:
 import asyncio
 from sentinel_client import AsyncSentinelClient
 
+
 async def main():
     async with AsyncSentinelClient(base_url="http://localhost:8000") as client:
         async for chunk in client.chat_stream("Explain Kubernetes Pods in detail."):
             if chunk.get("token"):
                 print(chunk["token"], end="", flush=True)
             elif chunk.get("type") == "meta":
-                print(f"\nLatency: {chunk['meta']['latency_ms']}ms | Model: {chunk['meta']['model']}")
+                print(
+                    f"\nLatency: {chunk['meta']['latency_ms']}ms | Model: {chunk['meta']['model']}"
+                )
+
 
 asyncio.run(main())
 ```
 
 #### 3. Asynchronous Document Ingestion
 ```python
-job = client.ingest_documents([
-    {
-        "source": "compliance/soc2.md",
-        "content": "All production database snapshots must be encrypted with AWS KMS customer-managed keys.",
-        "metadata": {"department": "security", "classification": "restricted"},
-    }
-])
+job = client.ingest_documents(
+    [
+        {
+            "source": "compliance/soc2.md",
+            "content": "All production database snapshots must be encrypted with AWS KMS customer-managed keys.",
+            "metadata": {"department": "security", "classification": "restricted"},
+        }
+    ]
+)
 print(f"Enqueued Ingestion Job ID: {job.job_id}")
 ```
 
