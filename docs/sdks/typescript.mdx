@@ -11,15 +11,15 @@ The Sentinel TypeScript SDK provides complete type definitions, streaming async 
 
 <CodeGroup>
 ```bash npm
-npm install @sentinel-ai/client
+npm install @lansar/sentinel-client
 ```
 
 ```bash pnpm
-pnpm add @sentinel-ai/client
+pnpm add @lansar/sentinel-client
 ```
 
 ```bash yarn
-yarn add @sentinel-ai/client
+yarn add @lansar/sentinel-client
 ```
 </CodeGroup>
 
@@ -32,7 +32,7 @@ yarn add @sentinel-ai/client
 ### 1. Synchronous Chat Query
 
 ```typescript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({
   baseUrl: process.env.SENTINEL_BASE_URL || 'https://api.sentinel.yourdomain.com',
@@ -61,7 +61,7 @@ main();
 Sentinel's `chatStream` method returns an async generator that yields tokens as they are produced by the LLM:
 
 ```typescript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
 
@@ -91,7 +91,7 @@ streamResponse();
 Submit documentation batches to Sentinel's background Redis Stream ingestion queue:
 
 ```typescript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
 
@@ -145,7 +145,7 @@ await sentinel.submitFeedback({
 
 ```typescript
 // app/api/chat/route.ts
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 import { NextRequest } from 'next/server';
 
 const sentinel = new SentinelClient({
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
 ```typescript
 // server.ts
 import express from 'express';
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const app = express();
 app.use(express.json());

@@ -7,7 +7,7 @@
 **Zero-Hallucination, API-First LLMOps Platform for Production Applications, Microservices & LLM Workflows.**
 
 [![CI Quality Gate](https://img.shields.io/badge/CI%20Gate-76%2F76%20Passed-brightgreen.svg)](https://github.com/your-org/sentinel)
-[![TypeScript SDK](https://img.shields.io/npm/v/@sentinel-ai/client.svg?label=%40sentinel-ai%2Fclient&color=blue)](https://www.npmjs.com/package/@sentinel-ai/client)
+[![TypeScript SDK](https://img.shields.io/npm/v/@lansar/sentinel-client.svg?label=%40lansar%2Fsentinel-client&color=blue)](https://www.npmjs.com/package/@lansar/sentinel-client)
 [![Python SDK](https://img.shields.io/pypi/v/sentinel-client.svg?label=sentinel-client&color=3776AB)](https://pypi.org/project/sentinel-client/)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
@@ -113,16 +113,16 @@ Includes native endpoints (`POST /v1/feedback`, `GET /v1/feedback/stats`, `GET /
 
 Sentinel provides official client libraries for TypeScript/Node.js/React and Python.
 
-### TypeScript / Node.js SDK (`@sentinel-ai/client`)
+### TypeScript / Node.js SDK (`@lansar/sentinel-client`)
 
 ```bash
-npm install @sentinel-ai/client
-# or: pnpm add @sentinel-ai/client
+npm install @lansar/sentinel-client
+# or: pnpm add @lansar/sentinel-client
 ```
 
 #### 1. Synchronous Chat & Multi-Turn Sessions
 ```typescript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({
   baseUrl: 'https://api.sentinel.yourcompany.com',
@@ -164,7 +164,7 @@ for await (const chunk of stream) {
 #### 3. React Chat Hook (`useSentinelChat`)
 ```tsx
 import React, { useState } from 'react';
-import { useSentinelChat } from '@sentinel-ai/client/react';
+import { useSentinelChat } from '@lansar/sentinel-client/react';
 
 export function EnterpriseChatWidget() {
   const [input, setInput] = useState('');

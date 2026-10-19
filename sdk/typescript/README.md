@@ -1,8 +1,8 @@
-# @sentinel-ai/client
+# @lansar/sentinel-client
 
 Official TypeScript and Node.js client library for the **Sentinel Enterprise AI & RAG Gateway**.
 
-[![npm version](https://img.shields.io/npm/v/@sentinel-ai/client.svg)](https://www.npmjs.com/package/@sentinel-ai/client)
+[![npm version](https://img.shields.io/npm/v/@lansar/sentinel-client.svg)](https://www.npmjs.com/package/@lansar/sentinel-client)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/your-org/sentinel/blob/main/LICENSE)
 
 ---
@@ -10,11 +10,11 @@ Official TypeScript and Node.js client library for the **Sentinel Enterprise AI 
 ## Installation
 
 ```bash
-npm install @sentinel-ai/client
+npm install @lansar/sentinel-client
 # or
-pnpm add @sentinel-ai/client
+pnpm add @lansar/sentinel-client
 # or
-yarn add @sentinel-ai/client
+yarn add @lansar/sentinel-client
 ```
 
 ---
@@ -24,7 +24,7 @@ yarn add @sentinel-ai/client
 ### 1. Synchronous Chat
 
 ```typescript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({
   baseUrl: 'https://api.sentinel.yourdomain.com',
@@ -44,7 +44,7 @@ console.log(`Cost: $${response.meta.cost_usd}`);
 ### 2. Real-Time Streaming with `for await`
 
 ```typescript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
 
@@ -65,7 +65,7 @@ for await (const chunk of stream) {
 
 ```tsx
 import React, { useState } from 'react';
-import { useSentinelChat } from '@sentinel-ai/client';
+import { useSentinelChat } from '@lansar/sentinel-client/react';
 
 export function ChatWidget() {
   const [input, setInput] = useState('');

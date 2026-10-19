@@ -51,3 +51,7 @@ htmlcov/
 # Docker / local data
 data/qdrant_storage/
 data/redis_data/
+
+# Dependencies
+node_modules/
+.mintlify/

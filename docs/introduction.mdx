@@ -30,7 +30,7 @@ Calling raw foundation model APIs (OpenAI, Google Gemini, Anthropic) directly fr
 
 <CodeGroup>
 ```typescript Node.js / TypeScript
-import { SentinelClient } from '@sentinel-ai/client';
+import { SentinelClient } from '@lansar/sentinel-client';
 
 const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
 const response = await sentinel.chat({ question: "How do Kubernetes Deployments handle rolling updates?" });
