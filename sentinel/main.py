@@ -16,6 +16,12 @@ from sentinel.agent.nodes import AgentNodeHandler
 from sentinel.agent.semantic_cache import SemanticCache
 from sentinel.api.middleware import RequestContextMiddleware
 from sentinel.api.routes import router
+from sentinel.api.security import (
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+    SlidingWindowRateLimiter,
+)
 from sentinel.core.config import Settings, get_settings
 from sentinel.core.errors import SentinelError
 from sentinel.core.logging import get_logger, setup_logging
@@ -225,8 +231,23 @@ def build_app(
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.state.settings = current_settings
 
-    # Middleware
+    # Middleware stack
+    if current_settings.security_headers_enabled:
+        app.add_middleware(SecurityHeadersMiddleware)
+
+    if current_settings.rate_limit_enabled:
+        rate_limiter = SlidingWindowRateLimiter(
+            max_requests=current_settings.rate_limit_requests,
+            window_seconds=current_settings.rate_limit_window_seconds,
+        )
+        app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+
+    app.add_middleware(
+        RequestSizeLimitMiddleware,
+        max_size_bytes=current_settings.max_request_size_bytes,
+    )
     app.add_middleware(RequestContextMiddleware)
 
     # Exception Handlers

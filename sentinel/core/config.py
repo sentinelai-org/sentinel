@@ -126,6 +126,30 @@ class Settings(BaseSettings):
         default=True, description="Enable complexity-based dynamic cost-aware routing"
     )
 
+    # Enterprise Security & Hardening
+    api_key_auth_enabled: bool = Field(
+        default=False, description="Require Bearer API key or X-API-Key on protected endpoints"
+    )
+    sentinel_api_keys: list[str] = Field(
+        default_factory=lambda: ["sk-sentinel-default-key"],
+        description="Authorized API keys for gateway access",
+    )
+    rate_limit_enabled: bool = Field(
+        default=True, description="Enable sliding window rate limiting to prevent DoS attacks"
+    )
+    rate_limit_requests: int = Field(
+        default=120, description="Maximum allowed requests per sliding window"
+    )
+    rate_limit_window_seconds: int = Field(
+        default=60, description="Rate limit window duration in seconds"
+    )
+    max_request_size_bytes: int = Field(
+        default=2 * 1024 * 1024, description="Maximum HTTP request body size in bytes (2MB)"
+    )
+    security_headers_enabled: bool = Field(
+        default=True, description="Enforce OWASP HTTP security headers on all responses"
+    )
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

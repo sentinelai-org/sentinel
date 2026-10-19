@@ -30,6 +30,7 @@ from sentinel.api.schemas import (
     ReadyResponse,
     SourceItem,
 )
+from sentinel.api.security import verify_api_key
 from sentinel.core.config import get_settings
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_current_span_id, get_current_trace_id
@@ -42,6 +43,7 @@ from sentinel.rag.vector_store import VectorStore
 from sentinel.workers.queue import BaseJobQueue
 
 logger = get_logger(__name__)
+
 
 router = APIRouter()
 
@@ -109,12 +111,14 @@ async def root() -> dict[str, Any]:
     }
 
 
+@router.get("/health", include_in_schema=False)
 @router.get("/healthz", response_model=HealthResponse, tags=["Health"])
 async def healthz() -> HealthResponse:
     """Liveness probe returning 200 OK if service process is running."""
     return HealthResponse(status="ok")
 
 
+@router.get("/ready", include_in_schema=False)
 @router.get("/readyz", response_model=ReadyResponse, tags=["Health"])
 async def readyz(
     cache: ResponseCache = Depends(get_cache),
@@ -147,6 +151,7 @@ async def chat(
     cache: ResponseCache = Depends(get_cache),
     semantic_cache: SemanticCache | None = Depends(get_semantic_cache),
     agent_graph: Any = Depends(get_agent_graph),
+    _api_key: str = Depends(verify_api_key),
 ) -> ChatResponse:
     """Main chat endpoint fronting the LangGraph RAG agent with multi-tier caching and safety guardrails."""
     req_id = getattr(request.state, "request_id", "req_unknown")
@@ -285,6 +290,7 @@ async def chat(
 async def submit_ingest_job(
     payload: IngestJobRequest,
     job_queue: BaseJobQueue = Depends(get_job_queue),
+    _api_key: str = Depends(verify_api_key),
 ) -> IngestJobResponse:
     """Submit document batch for background asynchronous ingestion via Redis Streams."""
     docs_payload = [doc.model_dump() for doc in payload.documents]
@@ -325,6 +331,7 @@ async def chat_stream(
     vector_store: VectorStore = Depends(get_vector_store),
     embedder: Any = Depends(get_embedder),
     llm_router: Any = Depends(get_llm_router),
+    _api_key: str = Depends(verify_api_key),
 ) -> StreamingResponse:
     """Server-Sent Events (SSE) streaming chat endpoint with real-time token delivery."""
     settings = get_settings()
@@ -569,6 +576,7 @@ async def chat_stream(
 async def submit_feedback(
     payload: FeedbackRequest,
     feedback_store: FeedbackStore = Depends(get_feedback_store),
+    _api_key: str = Depends(verify_api_key),
 ) -> FeedbackResponse:
     """Submit user evaluation feedback, ratings, and corrections for a query."""
     return await feedback_store.record_feedback(payload)

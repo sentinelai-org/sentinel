@@ -256,6 +256,13 @@ Configuration values are read from `.env` or system environment variables:
 | `SEMANTIC_CACHE_THRESHOLD` | `0.90` | Cosine similarity threshold for semantic cache hits. |
 | `COST_ROUTING_ENABLED` | `false` | Enables complexity classifier to route simple queries to Ollama. |
 | `GUARDRAILS_ENABLED` | `true` | Enables input safety and prompt injection checks. |
+| `API_KEY_AUTH_ENABLED` | `false` | Enforces Bearer token or `X-API-Key` authentication when `true`. |
+| `SENTINEL_API_KEYS` | `[]` | Comma-separated list of accepted API keys. |
+| `RATE_LIMIT_ENABLED` | `false` | Enables sliding window rate limiting per client IP / key. |
+| `RATE_LIMIT_REQUESTS` | `60` | Maximum requests allowed in rate limit window. |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate limiting window size in seconds. |
+| `MAX_REQUEST_SIZE_BYTES` | `2097152` | Maximum request body size (2MB) returning HTTP 413. |
+| `SECURITY_HEADERS_ENABLED` | `true` | Injects OWASP defense headers (CSP, HSTS, X-Frame-Options, etc.). |
 | `GROUNDEDNESS_GATE_ENABLED` | `true` | Enforces minimum factual overlap before returning answers. |
 | `GROUNDEDNESS_THRESHOLD` | `0.70` | Cutoff ratio for groundedness check. |
 | `OTEL_ENABLED` | `true` | Enables OpenTelemetry trace export. |

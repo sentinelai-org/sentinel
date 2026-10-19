@@ -293,12 +293,53 @@ Enterprises can stream these metrics to Stripe, Datadog, or an internal billing 
 
 ---
 
-## 5. Security & Compliance Checklist for Enterprise Deployment
+## 5. Security Hardening & Data Protection
+
+Sentinel incorporates defense-in-depth security to protect user data and shield backend LLMs from adversarial attacks:
+
+### Enterprise Security Controls
+
+```mermaid
+flowchart TD
+    Req[Incoming Client Request] --> HSTS["OWASP Security Headers (CSP, HSTS, X-Frame, Nosniff)"]
+    HSTS --> SizeCheck{"Payload Size <= 2MB?"}
+    SizeCheck -- "Exceeds" --> E413["413 Payload Too Large"]
+    SizeCheck -- "OK" --> Auth{"API Key Valid? (Timing-Safe)"}
+    Auth -- "Invalid / Missing" --> E401["401 Unauthorized"]
+    Auth -- "Authenticated" --> Rate{"Rate Limit Available? (Sliding Window)"}
+    Rate -- "Exceeded" --> E429["429 Too Many Requests + Retry-After"]
+    Rate -- "Allowed" --> InGuard["Input Guardrail: Normalize NFKC & Strip Zero-Width Unicode"]
+    InGuard --> PII["PII Masking: SSN, Phones, JWTs, Private Keys, Passwords"]
+    PII --> PromptDef["Injection & Jailbreak Blocker (Base64, Roleplay, Overrides)"]
+    PromptDef --> Agent[RAG Agent & LLM Router]
+    Agent --> OutGuard["Output Guardrail: XSS Stripping, DB URI & Secret Redaction"]
+    OutGuard --> ClientResponse[Secure Sanitized Response]
+```
+
+### Security Configuration Reference
+
+| Environment Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `API_KEY_AUTH_ENABLED` | `false` | Set to `true` in production to require Bearer tokens or `X-API-Key` headers. |
+| `SENTINEL_API_KEYS` | `[]` | Comma-separated list of valid enterprise API keys (e.g. `sk-live-123,sk-live-456`). |
+| `RATE_LIMIT_ENABLED` | `false` | Enables sliding window rate limiting per IP / API key. |
+| `RATE_LIMIT_REQUESTS` | `60` | Max requests permitted within sliding window. |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | Duration of the rate limiting window in seconds. |
+| `MAX_REQUEST_SIZE_BYTES` | `2097152` (2 MB) | Rejects oversized payloads to prevent memory exhaustion and payload bombs. |
+| `SECURITY_HEADERS_ENABLED` | `true` | Injects OWASP recommended headers (`X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, etc.). |
+
+### Security & Compliance Checklist for Enterprise Deployment
 
 | Capability | Sentinel Implementation | Enterprise Benefit |
 | :--- | :--- | :--- |
-| **Data Privacy (PII)** | Regex & Presidio pattern masking (email, SSN, API keys) | Private data is sanitized before reaching cloud LLMs |
-| **Prompt Injection** | Heuristic & pattern detection blocking jailbreak attempts | Protects internal systems from adversarial prompt hacking |
-| **Audit Trails** | Distributed tracing with OpenTelemetry & OTLP export to Jaeger | Every retrieval, prompt, cost, and token is permanently auditable |
-| **Data Sovereignty** | Self-hosted fallback (Ollama on private Kubernetes cluster) | Critical data never leaves the corporate boundary during cloud outages |
+| **API Authentication** | Constant-time `hmac.compare_digest` Bearer / `X-API-Key` checks | Prevents unauthorized access and side-channel timing attacks |
+| **DDoS & Brute Force Defense** | Per-tenant/IP sliding window limiter with `Retry-After` headers | Thwarts endpoint denial-of-service and runaway script usage |
+| **Payload Bombs & Buffer Overflow** | 2MB streaming payload cutoff returning HTTP 413 | Protects gateway instances from memory exhaustion attacks |
+| **Obfuscation Evasion Defense** | Zero-width unicode stripping (`\u200B-\u200D`, `\uFEFF`) and NFKC normalization | Blocks evasion techniques that bypass naive regex filters |
+| **Injection & Jailbreak Defense** | Base64 heuristic analysis, delimiter inspection, roleplay override blocks | Safeguards underlying LLMs from prompt injections and privilege escalation |
+| **Sensitive Data Masking (PII)** | Real-time redaction of SSNs, phone numbers, JWTs, private RSA/SSH keys | Complies with GDPR/HIPAA by preventing PII egress to external model providers |
+| **Secrets & URI Leakage Defense** | Post-generation scrubber of database URIs (`postgres://`), API keys, system prompts | Guarantees sensitive infrastructure credentials are never reflected to clients |
+| **XSS & Markdown Sanitization** | Automatic neutralization of `<script>`, `javascript:`, and inline HTML event handlers | Prevents stored/reflected XSS when client web frontends render agent markdown |
+| **Audit Trails & Observability** | Distributed tracing with OpenTelemetry & OTLP export to Jaeger | Every retrieval, prompt, cost, and token is permanently auditable |
 | **Model Verification** | Runtime Groundedness Gate ($\ge 70\%$ threshold) | Eliminates hallucinated facts from reaching end users |
+
