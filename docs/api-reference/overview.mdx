@@ -1,0 +1,60 @@
+---
+title: "API Overview"
+description: "Core conventions, authentication, base URLs, and response envelope format"
+---
+
+The Sentinel API is structured as an enterprise REST and Server-Sent Events (SSE) gateway. All endpoints produce JSON or Event Streams.
+
+## Base URLs
+
+| Environment | Base URL |
+| :--- | :--- |
+| **Local Development** | `http://localhost:8000` |
+| **Kubernetes Staging** | `https://sentinel-staging.yourdomain.internal` |
+| **Production SaaS** | `https://sentinel.yourdomain.com` |
+
+---
+
+## Authentication
+
+When `API_KEY_AUTH_ENABLED=true` is set, authenticate requests using an authorized Bearer token or custom header:
+
+<CodeGroup>
+```bash Bearer Token (Standard)
+curl -H "Authorization: Bearer sk-live-prod-enterprise-key-1" https://sentinel.yourdomain.com/v1/chat
+```
+
+```bash X-API-Key Header
+curl -H "X-API-Key: sk-live-prod-enterprise-key-1" https://sentinel.yourdomain.com/v1/chat
+```
+</CodeGroup>
+
+---
+
+## HTTP Status Codes
+
+| Status Code | Meaning | When Returned |
+| :--- | :--- | :--- |
+| `200 OK` | Success | Chat response, streaming connection, or status returned. |
+| `201 Created` | Created | Asynchronous ingestion job or user feedback successfully submitted. |
+| `400 Bad Request` | Invalid Input | Malformed JSON body or empty question payload. |
+| `401 Unauthorized` | Auth Required | Missing or invalid API key when authentication is active. |
+| `413 Payload Too Large` | Oversized Body | Request body exceeds configured `MAX_REQUEST_SIZE_BYTES` (2 MB). |
+| `429 Too Many Requests` | Throttled | Client has exceeded the sliding-window rate limit threshold. |
+| `500 Server Error` | Internal Failure | Unhandled gateway exception (trace ID included for debugging). |
+
+---
+
+## Endpoints Summary
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/v1/chat` | Main synchronous RAG query endpoint returning full answer, sources, and metadata. |
+| `POST` | `/v1/chat/stream` | Server-Sent Events (SSE) real-time token streaming endpoint. |
+| `POST` | `/v1/ingest/jobs` | Enqueue document batch for asynchronous background ingestion via Redis Streams. |
+| `GET` | `/v1/ingest/jobs/{job_id}` | Check status and progress of an ingestion job. |
+| `POST` | `/v1/feedback` | Record user rating, feedback comment, or ground-truth correction. |
+| `GET` | `/v1/feedback/stats` | Aggregated user satisfaction and feedback analytics. |
+| `GET` | `/v1/feedback/export` | Export fine-tuning dataset formatted for LLM instruction tuning. |
+| `GET` | `/health` / `/healthz` | Kubernetes liveness probe. |
+| `GET` | `/ready` / `/readyz` | Kubernetes readiness probe (verifies Qdrant & Redis connectivity). |

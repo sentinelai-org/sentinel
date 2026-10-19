@@ -1,0 +1,157 @@
+---
+title: "Chat Endpoint"
+api: "POST /v1/chat"
+description: "Submit a question to the LangGraph RAG state machine"
+---
+
+Executes full hybrid retrieval, re-ranking, cost routing, factual groundedness verification, and returns the grounded answer with citations and execution metadata.
+
+### Request Body
+
+<ParamField body="question" type="string" required>
+  The question or prompt to ask Sentinel. Must contain at least 1 character.
+</ParamField>
+
+<ParamField body="session_id" type="string">
+  Optional conversation identifier for telemetry tracking and multi-turn sessions.
+</ParamField>
+
+---
+
+### Request Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.sentinel.yourdomain.com/v1/chat \
+  -H "Authorization: Bearer sk-live-prod-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "How do Kubernetes Deployments handle rolling updates?",
+    "session_id": "session_corp_user_42"
+  }'
+```
+
+```typescript Node.js / TypeScript
+import { SentinelClient } from '@sentinel-ai/client';
+
+const sentinel = new SentinelClient({ apiKey: 'sk-live-prod-key' });
+const res = await sentinel.chat({
+  question: "How do Kubernetes Deployments handle rolling updates?",
+  sessionId: "session_corp_user_42",
+});
+
+console.log(res.answer);
+```
+
+```python Python
+from sentinel import SentinelClient
+
+client = SentinelClient(api_key="sk-live-prod-key")
+res = client.chat(
+    question="How do Kubernetes Deployments handle rolling updates?",
+    session_id="session_corp_user_42",
+)
+
+print(res["answer"])
+```
+</CodeGroup>
+
+---
+
+### Response Fields
+
+<ResponseField name="answer" type="string" required>
+  The verified generated answer, or polite refusal if out-of-scope or ungrounded.
+</ResponseField>
+
+<ResponseField name="sources" type="array" required>
+  List of retrieved source citations used to compose the answer.
+  <Expandable title="Source Item Properties">
+    <ResponseField name="source" type="string">
+      Filename or identifier of the source document.
+    </ResponseField>
+    <ResponseField name="content" type="string">
+      Retrieved excerpt or text snippet from the document.
+    </ResponseField>
+    <ResponseField name="score" type="number">
+      Relevance score assigned by the retrieval / re-ranker stage.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object" required>
+  Detailed execution, cost, and observability metrics.
+  <Expandable title="Chat Metadata Properties">
+    <ResponseField name="latency_ms" type="number">
+      Total end-to-end execution duration in milliseconds.
+    </ResponseField>
+    <ResponseField name="tokens_in" type="integer">
+      Number of prompt tokens consumed.
+    </ResponseField>
+    <ResponseField name="tokens_out" type="integer">
+      Number of candidate tokens generated.
+    </ResponseField>
+    <ResponseField name="provider" type="string">
+      Provider that fulfilled the query (`gemini`, `ollama`, or `cache`).
+    </ResponseField>
+    <ResponseField name="model" type="string">
+      Model name that answered the query (e.g. `gemini-2.5-flash`, `qwen2.5:3b`).
+    </ResponseField>
+    <ResponseField name="cache_hit" type="boolean">
+      Whether the response was served from cache.
+    </ResponseField>
+    <ResponseField name="cache_type" type="string">
+      Type of cache hit (`exact`, `semantic`, or `null`).
+    </ResponseField>
+    <ResponseField name="cost_usd" type="number">
+      Estimated inference cost in USD.
+    </ResponseField>
+    <ResponseField name="groundedness_score" type="number">
+      Factual overlap score between answer and retrieved context (0.0 to 1.0).
+    </ResponseField>
+    <ResponseField name="groundedness_passed" type="boolean">
+      Whether the response passed the runtime Groundedness Gate.
+    </ResponseField>
+    <ResponseField name="guardrail_passed" type="boolean">
+      Whether the prompt passed input injection and safety checks.
+    </ResponseField>
+    <ResponseField name="request_id" type="string">
+      Unique correlation ID for tracing.
+    </ResponseField>
+    <ResponseField name="trace_id" type="string">
+      OpenTelemetry 32-hex trace ID for Jaeger trace lookup.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+### Response Example (200 OK)
+
+```json
+{
+  "answer": "Kubernetes Deployments ensure zero downtime during updates by incrementally replacing older Pods with newer Pods while observing maxSurge and maxUnavailable constraints specified in the deployment spec.",
+  "sources": [
+    {
+      "source": "k8s_deployments.md",
+      "content": "Deployments manage rolling updates by incrementally creating new ReplicaSets and scaling down old ReplicaSets.",
+      "score": 0.912
+    }
+  ],
+  "meta": {
+    "latency_ms": 328.4,
+    "tokens_in": 164,
+    "tokens_out": 76,
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "cache_hit": false,
+    "cache_type": null,
+    "cost_usd": 0.000032,
+    "groundedness_score": 0.88,
+    "groundedness_passed": true,
+    "guardrail_passed": true,
+    "request_id": "req_8f110c4d-a279-450b-93df-81ba66020c24",
+    "trace_id": "e6a4b11f7c320d9129df4a83c7490a01"
+  }
+}
+```

@@ -1,0 +1,171 @@
+---
+title: "Quickstart"
+description: "Deploy and query Sentinel locally in under 5 minutes"
+---
+
+Follow this guide to get Sentinel running locally with Docker Compose, ingest sample documentation, and send your first query.
+
+## Prerequisites
+
+Before starting, ensure you have:
+* **Python 3.11+** installed
+* **Docker & Docker Compose** installed and running
+* *(Optional)* A **Google Gemini API Key** from [Google AI Studio](https://aistudio.google.com/). If omitted, Sentinel runs against an offline mock provider.
+
+---
+
+## Step 1: Clone and Set Up Environment
+
+Clone the repository and create an isolated Python virtual environment:
+
+<CodeGroup>
+```bash macOS / Linux
+git clone https://github.com/your-org/sentinel.git
+cd sentinel
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+```powershell Windows PowerShell
+git clone https://github.com/your-org/sentinel.git
+cd sentinel
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+```
+</CodeGroup>
+
+---
+
+## Step 2: Start Infrastructure Datastores
+
+Start the local backing services (**Redis**, **Qdrant Vector DB**, and **Jaeger distributed tracing**):
+
+```bash
+docker compose up -d redis qdrant jaeger
+```
+
+Verify containers are running:
+
+```bash
+docker compose ps
+```
+
+| Service | Port | Description |
+| :--- | :--- | :--- |
+| **Qdrant** | `http://localhost:6333` | Vector database & Web UI dashboard |
+| **Redis** | `localhost:6379` | Exact cache & ingestion streaming queue |
+| **Jaeger** | `http://localhost:16686` | OpenTelemetry distributed trace viewer |
+
+---
+
+## Step 3: Configure Environment Variables
+
+Copy the example environment template:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and set your `GEMINI_API_KEY`:
+
+```env
+GEMINI_API_KEY=AIzaSy...your-gemini-api-key
+ENVIRONMENT=development
+LOG_LEVEL=INFO
+```
+
+---
+
+## Step 4: Ingest Knowledge Base Documents
+
+Index the initial documentation chunks from `data/docs` into Qdrant and the BM25 index:
+
+```bash
+python scripts/ingest_docs.py
+```
+
+You should see output confirming chunks were embedded with `BAAI/bge-small-en-v1.5` and stored.
+
+---
+
+## Step 5: Start the Sentinel Gateway
+
+Launch the API server with auto-reload:
+
+```bash
+uvicorn sentinel.main:app --reload --port 8000
+```
+
+The gateway is now live:
+* **Interactive Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+* **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
+* **Readiness Check**: [http://localhost:8000/ready](http://localhost:8000/ready)
+
+---
+
+## Step 6: Query the Gateway
+
+Send your first question using `curl`:
+
+<CodeGroup>
+```bash REST JSON (POST /v1/chat)
+curl -X POST http://localhost:8000/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "How do Kubernetes Deployments handle rolling updates?"
+  }'
+```
+
+```bash Streaming Tokens SSE (POST /v1/chat/stream)
+curl -N -X POST http://localhost:8000/v1/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "Explain Kubernetes Pods and their lifecycle."
+  }'
+```
+</CodeGroup>
+
+### Sample Response
+
+```json
+{
+  "answer": "Kubernetes Deployments ensure zero downtime during rolling updates by gradually replacing old Pod instances with new ones according to maxSurge and maxUnavailable constraints...",
+  "sources": [
+    {
+      "source": "k8s_deployments.md",
+      "content": "Deployments update pods incrementally ensuring maxUnavailable limits are respected.",
+      "score": 0.8842
+    }
+  ],
+  "meta": {
+    "latency_ms": 342.15,
+    "tokens_in": 142,
+    "tokens_out": 88,
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "cache_hit": false,
+    "groundedness_score": 0.85,
+    "groundedness_passed": true,
+    "cost_usd": 0.000034
+  }
+}
+```
+
+Notice the `groundedness_score: 0.85` confirming the answer passed the factual validation gate.
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Architecture" icon="diagram-project" href="/architecture/overview">
+    Deep-dive into LangGraph orchestration, Hybrid Search, and Re-ranking.
+  </Card>
+  <Card title="Security Hardening" icon="shield" href="/security/overview">
+    Configure API key auth, rate limiting, and zero-width injection defenses.
+  </Card>
+</CardGroup>

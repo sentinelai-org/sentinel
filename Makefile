@@ -17,8 +17,11 @@ help:
 	@echo "  make helm-install    Install/upgrade Sentinel via Helm on Kubernetes"
 	@echo "  make eval-gate       Run Groundedness Quality Gate evaluation benchmark"
 	@echo "  make load-test       Run automated Locust load testing suite"
-	@echo "  make export-feedback Export feedback to fine-tuning & DPO datasets"
+	@echo "  make docs-dev        Run local Mintlify documentation live preview"
 	@echo "  make clean           Remove temporary cache files"
+
+docs-dev:
+	npx -y mintlify dev --dir docs
 
 install:
 	pip install -e ".[dev]"

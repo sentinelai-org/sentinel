@@ -1,0 +1,109 @@
+---
+title: "Streaming Endpoint"
+api: "POST /v1/chat/stream"
+description: "Server-Sent Events (SSE) real-time token streaming"
+---
+
+Streams generated answer tokens progressively as they are produced by the LLM. Ideal for modern responsive chat UIs.
+
+### Request Body
+
+Same payload format as `/v1/chat`:
+
+<ParamField body="question" type="string" required>
+  The question or prompt to ask Sentinel.
+</ParamField>
+
+<ParamField body="session_id" type="string">
+  Optional conversation identifier.
+</ParamField>
+
+---
+
+### Request Examples
+
+<CodeGroup>
+```bash cURL
+curl -N -X POST https://api.sentinel.yourdomain.com/v1/chat/stream \
+  -H "Authorization: Bearer sk-live-prod-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is a Kubernetes Pod?"
+  }'
+```
+
+```typescript Node.js / TypeScript
+import { SentinelClient } from '@sentinel-ai/client';
+
+const sentinel = new SentinelClient({ apiKey: 'sk-live-prod-key' });
+const stream = await sentinel.chatStream({ question: "What is a Kubernetes Pod?" });
+
+for await (const chunk of stream) {
+  if (chunk.type === 'token') {
+    process.stdout.write(chunk.token);
+  }
+}
+```
+
+```python Python
+from sentinel import AsyncSentinelClient
+
+async with AsyncSentinelClient(api_key="sk-live-prod-key") as client:
+    async for chunk in client.chat_stream("What is a Kubernetes Pod?"):
+        if chunk.get("token"):
+            print(chunk["token"], end="", flush=True)
+```
+</CodeGroup>
+
+---
+
+### SSE Protocol Events
+
+Sentinel emits standard Server-Sent Events conforming to the W3C EventSource standard:
+
+| Event Type | Payload Schema | Description |
+| :--- | :--- | :--- |
+| `data: {"token": "..."}` | JSON string token | Emitted incrementally as words/tokens arrive from the LLM. |
+| `data: {"type": "sources", ...}` | List of source items | Emitted once context retrieval and ranking complete. |
+| `data: {"type": "meta", ...}` | Chat metadata dictionary | Final execution duration, provider, tokens, and trace ID. |
+| `data: [DONE]` | Literal string `[DONE]` | Signals stream completion. |
+
+---
+
+### Frontend Client Example (TypeScript / React)
+
+```typescript
+async function streamAnswer(question: string) {
+  const response = await fetch("https://sentinel.yourdomain.com/v1/chat/stream", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer sk-live-prod-key",
+    },
+    body: JSON.stringify({ question }),
+  });
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder("utf-8");
+
+  while (true) {
+    const { done, value } = await reader!.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    const lines = chunk.split("\n");
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const payload = line.replace("data: ", "").trim();
+        if (payload === "[DONE]") return;
+
+        const event = JSON.parse(payload);
+        if (event.token) {
+          process.stdout.write(event.token);
+        }
+      }
+    }
+  }
+}
+```

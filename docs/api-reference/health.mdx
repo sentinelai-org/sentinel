@@ -1,0 +1,52 @@
+---
+title: "Health & Probes"
+description: "Kubernetes liveness and readiness monitoring probes"
+---
+
+Sentinel provides standard liveness and readiness probes compatible with Kubernetes, AWS ECS, Google Cloud Run, and load balancers.
+
+Both probes are whitelisted and never blocked by rate limiters.
+
+---
+
+## 1. Liveness Probe
+
+`GET /health` or `GET /healthz`
+
+Returns `200 OK` as long as the FastAPI process is running and accepting HTTP connections.
+
+```bash
+curl -X GET http://localhost:8000/health
+```
+
+### Response Example (200 OK)
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+## 2. Readiness Probe
+
+`GET /ready` or `GET /readyz`
+
+Verifies that all downstream stateful dependencies (**Qdrant Vector DB** and **Redis**) are connected and responding. If any service is unreachable, returns `503 Service Unavailable`.
+
+```bash
+curl -X GET http://localhost:8000/ready
+```
+
+### Response Example (200 OK)
+
+```json
+{
+  "status": "ready",
+  "components": {
+    "qdrant": true,
+    "redis": true
+  }
+}
+```

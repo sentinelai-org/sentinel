@@ -1,0 +1,339 @@
+---
+title: "Node.js & TypeScript SDK"
+description: "Integrate Sentinel into Node.js, Next.js, Express, and React applications"
+---
+
+The Sentinel TypeScript SDK provides complete type definitions, streaming async iterators, and resilient HTTP client wrappers for Node.js and browser environments.
+
+---
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @sentinel-ai/client
+```
+
+```bash pnpm
+pnpm add @sentinel-ai/client
+```
+
+```bash yarn
+yarn add @sentinel-ai/client
+```
+</CodeGroup>
+
+*(Alternatively, you can copy the standalone [SentinelClient](#standalone-client-class) implementation directly into your codebase with zero external dependencies).*
+
+---
+
+## Quick Usage
+
+### 1. Synchronous Chat Query
+
+```typescript
+import { SentinelClient } from '@sentinel-ai/client';
+
+const sentinel = new SentinelClient({
+  baseUrl: process.env.SENTINEL_BASE_URL || 'https://api.sentinel.yourdomain.com',
+  apiKey: process.env.SENTINEL_API_KEY,
+});
+
+async function main() {
+  const result = await sentinel.chat({
+    question: "What is the difference between Deployments and StatefulSets in Kubernetes?",
+    sessionId: "tenant_acme_user_101",
+  });
+
+  console.log("Answer:", result.answer);
+  console.log("Citations:", result.sources.map(s => s.source));
+  console.log("Cost (USD):", result.meta.cost_usd);
+  console.log("Grounded:", result.meta.groundedness_passed);
+}
+
+main();
+```
+
+---
+
+### 2. Real-Time Token Streaming with `for await`
+
+Sentinel's `chatStream` method returns an async generator that yields tokens as they are produced by the LLM:
+
+```typescript
+import { SentinelClient } from '@sentinel-ai/client';
+
+const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
+
+async function streamResponse() {
+  const stream = await sentinel.chatStream({
+    question: "Explain the Kubernetes Pod lifecycle in detail.",
+  });
+
+  for await (const chunk of stream) {
+    if (chunk.type === 'token') {
+      process.stdout.write(chunk.token);
+    } else if (chunk.type === 'sources') {
+      console.log("\nSources cited:", chunk.sources);
+    } else if (chunk.type === 'meta') {
+      console.log(`\nLatency: ${chunk.meta.latency_ms}ms | Cost: $${chunk.meta.cost_usd}`);
+    }
+  }
+}
+
+streamResponse();
+```
+
+---
+
+### 3. Asynchronous Document Ingestion
+
+Submit documentation batches to Sentinel's background Redis Stream ingestion queue:
+
+```typescript
+import { SentinelClient } from '@sentinel-ai/client';
+
+const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
+
+async function uploadRunbooks() {
+  const job = await sentinel.ingest({
+    documents: [
+      {
+        content: "# Database Failover\n\nWhen primary db goes down, run: failover-db --cluster=prod",
+        source: "runbooks/database_failover.md",
+        metadata: { department: "DevOps", classification: "internal" },
+      },
+    ],
+  });
+
+  console.log(`Ingest job enqueued: ${job.job_id}`);
+
+  // Poll for completion
+  let status = await sentinel.getJobStatus(job.job_id);
+  while (status.status !== 'completed' && status.status !== 'failed') {
+    await new Promise((r) => setTimeout(r, 1000));
+    status = await sentinel.getJobStatus(job.job_id);
+    console.log(`Progress: ${status.progress_percent}%`);
+  }
+
+  console.log("Ingestion finished!");
+}
+
+uploadRunbooks();
+```
+
+---
+
+### 4. Submit Human Feedback & Corrections
+
+Capture user ratings and ground-truth corrections to continuously align your models:
+
+```typescript
+await sentinel.submitFeedback({
+  requestId: result.meta.request_id,
+  rating: -1,
+  comment: "Cited wrong rolling update parameter",
+  correction: "The parameter is maxSurge, not maxSurgeCount.",
+});
+```
+
+---
+
+## Framework Integration Examples
+
+### Next.js App Router (Streaming API Route)
+
+```typescript
+// app/api/chat/route.ts
+import { SentinelClient } from '@sentinel-ai/client';
+import { NextRequest } from 'next/server';
+
+const sentinel = new SentinelClient({
+  baseUrl: process.env.SENTINEL_BASE_URL,
+  apiKey: process.env.SENTINEL_API_KEY,
+});
+
+export async function POST(req: NextRequest) {
+  const { question } = await req.json();
+
+  const stream = await sentinel.chatStream({ question });
+  const encoder = new TextEncoder();
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        if (chunk.type === 'token') {
+          controller.enqueue(encoder.encode(chunk.token));
+        }
+      }
+      controller.close();
+    },
+  });
+
+  return new Response(readable, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}
+```
+
+---
+
+### Express.js Backend Route
+
+```typescript
+// server.ts
+import express from 'express';
+import { SentinelClient } from '@sentinel-ai/client';
+
+const app = express();
+app.use(express.json());
+
+const sentinel = new SentinelClient({
+  apiKey: process.env.SENTINEL_API_KEY,
+});
+
+app.post('/api/ask', async (req, res) => {
+  try {
+    const { question, tenantId } = req.body;
+    const response = await sentinel.chat({
+      question,
+      sessionId: `tenant_${tenantId}`,
+    });
+
+    res.json({
+      answer: response.answer,
+      citations: response.sources,
+      verified: response.meta.groundedness_passed,
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+app.listen(3000, () => console.log('Express running on port 3000'));
+```
+
+---
+
+## Standalone Client Class
+
+If you prefer not to install an npm package, copy this standalone TypeScript client directly into your project:
+
+```typescript
+export interface ChatOptions {
+  question: string;
+  sessionId?: string;
+}
+
+export interface ChatResponse {
+  answer: string;
+  sources: Array<{ source: string; content: string; score: number }>;
+  meta: {
+    latency_ms: number;
+    tokens_in: number;
+    tokens_out: number;
+    provider: string;
+    model: string;
+    cost_usd: number;
+    groundedness_score: number;
+    groundedness_passed: boolean;
+    guardrail_passed: boolean;
+    request_id: string;
+    trace_id?: string;
+  };
+}
+
+export class SentinelClient {
+  private baseUrl: string;
+  private apiKey?: string;
+
+  constructor(options: { baseUrl?: string; apiKey?: string } = {}) {
+    this.baseUrl = (options.baseUrl || 'http://localhost:8000').replace(/\/$/, '');
+    this.apiKey = options.apiKey;
+  }
+
+  private get headers(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) h['Authorization'] = `Bearer ${this.apiKey}`;
+    return h;
+  }
+
+  async chat(options: ChatOptions): Promise<ChatResponse> {
+    const res = await fetch(`${this.baseUrl}/v1/chat`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({ question: options.question, session_id: options.sessionId }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Sentinel error: HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  async *chatStream(options: ChatOptions) {
+    const res = await fetch(`${this.baseUrl}/v1/chat/stream`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({ question: options.question, session_id: options.sessionId }),
+    });
+
+    if (!res.ok) throw new Error(`Stream error: HTTP ${res.status}`);
+
+    const reader = res.body?.getReader();
+    const decoder = new TextDecoder();
+    if (!reader) return;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.replace('data: ', '').trim();
+        if (payload === '[DONE]') return;
+
+        try {
+          const parsed = JSON.parse(payload);
+          if (parsed.token) yield { type: 'token' as const, token: parsed.token };
+          else if (parsed.type === 'sources') yield { type: 'sources' as const, sources: parsed.sources };
+          else if (parsed.type === 'meta') yield { type: 'meta' as const, meta: parsed.meta };
+        } catch {}
+      }
+    }
+  }
+
+  async ingest(data: { documents: Array<{ content: string; source?: string; metadata?: any }> }) {
+    const res = await fetch(`${this.baseUrl}/v1/ingest/jobs`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  }
+
+  async getJobStatus(jobId: string) {
+    const res = await fetch(`${this.baseUrl}/v1/ingest/jobs/${jobId}`, {
+      headers: this.headers,
+    });
+    return res.json();
+  }
+
+  async submitFeedback(feedback: { requestId: string; rating: number; comment?: string; correction?: string }) {
+    const res = await fetch(`${this.baseUrl}/v1/feedback`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({
+        request_id: feedback.requestId,
+        rating: feedback.rating,
+        comment: feedback.comment,
+        correction: feedback.correction,
+      }),
+    });
+    return res.ok;
+  }
+}
+```

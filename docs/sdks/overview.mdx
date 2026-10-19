@@ -1,0 +1,54 @@
+---
+title: "Client Libraries & SDKs Overview"
+description: "Official, fully-typed client SDKs for integrating Sentinel into Node.js and Python applications"
+---
+
+Sentinel provides official, lightweight client libraries designed for software engineers building microservices, web apps, and background tasks.
+
+Both SDKs handle authentication, request serialization, Server-Sent Events (SSE) token streaming via async iterators, retry policies, and error handling.
+
+---
+
+## Available SDKs
+
+<CardGroup cols={2}>
+  <Card title="Node.js & TypeScript SDK" icon="node-js" href="/sdks/typescript">
+    Built for modern JavaScript, TypeScript, Next.js, Express, Fastify, and NestJS. Zero heavy dependencies.
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python">
+    Built for Python 3.10+, FastAPI, Django, Flask, Celery, and data pipelines with both sync and async clients.
+  </Card>
+</CardGroup>
+
+---
+
+## Core Capabilities Across SDKs
+
+| Feature | Node.js / TypeScript | Python |
+| :--- | :---: | :---: |
+| **Synchronous Chat (`chat`)** | ✅ Fully typed Promise | ✅ Sync & Async (`await client.chat(...)`) |
+| **Real-time Streaming (`chatStream`)** | ✅ `for await (const chunk of ...)` | ✅ `async for chunk in ...` generator |
+| **Asynchronous Document Ingestion** | ✅ `client.ingest({ documents })` | ✅ `client.ingest(documents=[...])` |
+| **Job Progress Polling** | ✅ `client.getJobStatus(jobId)` | ✅ `client.get_job_status(job_id)` |
+| **Feedback & Corrections** | ✅ `client.submitFeedback(...)` | ✅ `client.submit_feedback(...)` |
+| **Health & Readiness Probes** | ✅ `client.isReady()` | ✅ `client.is_ready()` |
+| **Automatic Header Auth** | ✅ Bearer & X-API-Key | ✅ Bearer & X-API-Key |
+| **Retry & Timeout Handling** | ✅ Configurable timeout & retries | ✅ Built on robust `httpx` engine |
+
+---
+
+## Installation
+
+<CodeGroup>
+```bash Node.js / npm
+npm install @sentinel-ai/client
+# or via pnpm / yarn
+pnpm add @sentinel-ai/client
+```
+
+```bash Python / pip
+pip install sentinel-client
+# or via poetry / uv
+poetry add sentinel-client
+```
+</CodeGroup>

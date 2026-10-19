@@ -1,0 +1,282 @@
+---
+title: "Python SDK"
+description: "Integrate Sentinel into Python microservices, FastAPI, Django, and Celery tasks"
+---
+
+The Sentinel Python SDK provides both synchronous and asynchronous HTTP clients built on `httpx`. It offers native type hints, streaming token generators, and automatic retry policies.
+
+---
+
+## Installation
+
+<CodeGroup>
+```bash pip
+pip install sentinel-client
+```
+
+```bash poetry
+poetry add sentinel-client
+```
+
+```bash uv
+uv add sentinel-client
+```
+</CodeGroup>
+
+*(Or copy the [Standalone Client](#standalone-python-client) directly into your project with zero external dependencies beyond `httpx`).*
+
+---
+
+## Quick Usage
+
+### 1. Synchronous Client
+
+```python
+from sentinel import SentinelClient
+
+client = SentinelClient(
+    base_url="https://api.sentinel.yourdomain.com",
+    api_key="sk-live-enterprise-key",
+)
+
+# 1. Ask a question
+response = client.chat(
+    question="How do Kubernetes Deployments handle rolling updates?",
+    session_id="tenant_acme_user_101",
+)
+
+print("Answer:", response["answer"])
+print("Grounded:", response["meta"]["groundedness_passed"])
+print("Cost (USD):", f"${response['meta']['cost_usd']:.6f}")
+
+for source in response["sources"]:
+    print(f"- {source['source']} (Relevance: {source['score']:.2f})")
+```
+
+---
+
+### 2. Asynchronous Streaming Client (`async for`)
+
+Ideal for modern async web servers (FastAPI, Starlette, Tornado):
+
+```python
+import asyncio
+from sentinel import AsyncSentinelClient
+
+async def main():
+    async with AsyncSentinelClient(api_key="sk-live-enterprise-key") as client:
+        # Stream tokens live to stdout
+        async for chunk in client.chat_stream("Explain Kubernetes Pods and their lifecycle."):
+            if chunk.get("token"):
+                print(chunk["token"], end="", flush=True)
+            elif chunk.get("type") == "meta":
+                print(f"\n\nLatency: {chunk['meta']['latency_ms']}ms")
+
+asyncio.run(main())
+```
+
+---
+
+### 3. Asynchronous Document Ingestion
+
+```python
+import asyncio
+from sentinel import AsyncSentinelClient
+
+async def sync_knowledge_base():
+    async with AsyncSentinelClient(api_key="sk-live-enterprise-key") as client:
+        # Submit document batch
+        job = await client.ingest(
+            documents=[
+                {
+                    "content": "# SRE Runbook\n\nIf redis latency > 50ms: failover-db --force",
+                    "source": "runbooks/redis_failover.md",
+                    "metadata": {"team": "sre", "env": "prod"},
+                }
+            ]
+        )
+        print("Job enqueued:", job["job_id"])
+
+        # Poll status
+        status = await client.get_job_status(job["job_id"])
+        while status["status"] not in ("completed", "failed"):
+            await asyncio.sleep(1)
+            status = await client.get_job_status(job["job_id"])
+            print(f"Status: {status['status']} ({status['progress_percent']}%)")
+
+asyncio.run(sync_knowledge_base())
+```
+
+---
+
+### 4. Human Feedback Submission
+
+```python
+client.submit_feedback(
+    request_id=response["meta"]["request_id"],
+    rating=1,
+    comment="Accurate step-by-step resolution",
+)
+```
+
+---
+
+## Framework Integrations
+
+### FastAPI Microservice
+
+Inject Sentinel as a FastAPI dependency:
+
+```python
+# main.py
+from fastapi import FastAPI, Depends
+from pydantic import BaseModel
+from sentinel import AsyncSentinelClient
+
+app = FastAPI()
+
+def get_sentinel() -> AsyncSentinelClient:
+    return AsyncSentinelClient(
+        base_url="http://localhost:8000",
+        api_key="sk-live-enterprise-key",
+    )
+
+class QueryPayload(BaseModel):
+    question: str
+    tenant_id: str
+
+@app.post("/ask")
+async def ask_endpoint(
+    payload: QueryPayload,
+    sentinel: AsyncSentinelClient = Depends(get_sentinel),
+):
+    async with sentinel:
+        res = await sentinel.chat(
+            question=payload.question,
+            session_id=f"tenant_{payload.tenant_id}",
+        )
+        return {
+            "answer": res["answer"],
+            "citations": res["sources"],
+            "verified": res["meta"]["groundedness_passed"],
+        }
+```
+
+---
+
+### Celery Background Worker Task
+
+```python
+# tasks.py
+from celery import Celery
+from sentinel import SentinelClient
+
+app = Celery("tasks", broker="redis://localhost:6379/1")
+sentinel = SentinelClient(api_key="sk-live-enterprise-key")
+
+@app.task
+def process_customer_ticket(ticket_id: str, inquiry: str):
+    response = sentinel.chat(question=inquiry, session_id=f"ticket_{ticket_id}")
+    # Store verified answer in CRM database
+    return {
+        "ticket_id": ticket_id,
+        "suggested_response": response["answer"],
+        "grounded": response["meta"]["groundedness_passed"],
+    }
+```
+
+---
+
+## Standalone Python Client
+
+Copy this standalone module directly into your Python codebase (requires `httpx`):
+
+```python
+"""Standalone Sentinel enterprise client."""
+
+from collections.abc import AsyncGenerator
+from typing import Any
+import httpx
+
+
+class SentinelClient:
+    """Synchronous Sentinel Gateway client."""
+
+    def __init__(self, base_url: str = "http://localhost:8000", api_key: str | None = None, timeout: float = 30.0):
+        self.base_url = base_url.rstrip("/")
+        self.headers = {"Content-Type": "application/json"}
+        if api_key:
+            self.headers["Authorization"] = f"Bearer {api_key}"
+        self.client = httpx.Client(timeout=timeout)
+
+    def chat(self, question: str, session_id: str | None = None) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/chat"
+        res = self.client.post(url, json={"question": question, "session_id": session_id}, headers=self.headers)
+        res.raise_for_status()
+        return res.json()
+
+    def ingest(self, documents: list[dict[str, Any]]) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/ingest/jobs"
+        res = self.client.post(url, json={"documents": documents}, headers=self.headers)
+        res.raise_for_status()
+        return res.json()
+
+    def submit_feedback(self, request_id: str, rating: int, comment: str | None = None, correction: str | None = None) -> bool:
+        url = f"{self.base_url}/v1/feedback"
+        payload = {"request_id": request_id, "rating": rating, "comment": comment, "correction": correction}
+        res = self.client.post(url, json=payload, headers=self.headers)
+        return res.status_code in (200, 201)
+
+    def close(self) -> None:
+        self.client.close()
+
+
+class AsyncSentinelClient:
+    """Asynchronous Sentinel Gateway client."""
+
+    def __init__(self, base_url: str = "http://localhost:8000", api_key: str | None = None, timeout: float = 30.0):
+        self.base_url = base_url.rstrip("/")
+        self.headers = {"Content-Type": "application/json"}
+        if api_key:
+            self.headers["Authorization"] = f"Bearer {api_key}"
+        self.client = httpx.AsyncClient(timeout=timeout)
+
+    async def __aenter__(self) -> "AsyncSentinelClient":
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        await self.client.aclose()
+
+    async def chat(self, question: str, session_id: str | None = None) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/chat"
+        res = await self.client.post(url, json={"question": question, "session_id": session_id}, headers=self.headers)
+        res.raise_for_status()
+        return res.json()
+
+    async def chat_stream(self, question: str, session_id: str | None = None) -> AsyncGenerator[dict[str, Any], None]:
+        url = f"{self.base_url}/v1/chat/stream"
+        import json
+        async with self.client.stream("POST", url, json={"question": question, "session_id": session_id}, headers=self.headers) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    payload = line[6:].strip()
+                    if payload == "[DONE]":
+                        break
+                    try:
+                        yield json.loads(payload)
+                    except json.JSONDecodeError:
+                        pass
+
+    async def ingest(self, documents: list[dict[str, Any]]) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/ingest/jobs"
+        res = await self.client.post(url, json={"documents": documents}, headers=self.headers)
+        res.raise_for_status()
+        return res.json()
+
+    async def get_job_status(self, job_id: str) -> dict[str, Any]:
+        url = f"{self.base_url}/v1/ingest/jobs/{job_id}"
+        res = await self.client.get(url, headers=self.headers)
+        res.raise_for_status()
+        return res.json()
+```

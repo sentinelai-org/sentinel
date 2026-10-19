@@ -1,0 +1,55 @@
+---
+title: "Security & Hardening Overview"
+description: "Defense-in-depth architecture protecting user data and securing LLM infrastructure"
+---
+
+Security in enterprise AI applications requires protection across multiple boundaries: network ingress, prompt evaluation, LLM response rendering, and egress data privacy.
+
+Sentinel implements a multi-layer **Defense-in-Depth** security model:
+
+```mermaid
+flowchart TD
+    Req[Incoming Client Request] --> HSTS["1. OWASP Security Headers (CSP, HSTS, X-Frame, Nosniff)"]
+    HSTS --> SizeCheck{"2. Payload Size <= 2MB?"}
+    SizeCheck -- "Exceeds" --> E413["413 Payload Too Large"]
+    SizeCheck -- "OK" --> Auth{"3. API Key Valid? (Timing-Safe)"}
+    Auth -- "Invalid / Missing" --> E401["401 Unauthorized"]
+    Auth -- "Authenticated" --> Rate{"4. Rate Limit Available? (Sliding Window)"}
+    Rate -- "Exceeded" --> E429["429 Too Many Requests + Retry-After"]
+    Rate -- "Allowed" --> InGuard["5. Input Guardrail: Normalize NFKC & Strip Zero-Width"]
+    InGuard --> PII["6. PII Masking: SSN, Phones, JWTs, Private Keys, Passwords"]
+    PII --> PromptDef["7. Prompt Injection Blocker (Base64, Roleplay, Overrides)"]
+    PromptDef --> Agent[RAG Agent & Retrieval Engine]
+    Agent --> OutGuard["8. Output Guardrail: XSS Stripping, DB URI & Secret Redaction"]
+    OutGuard --> ClientResponse[Safe, Sanitized Response Delivered]
+```
+
+---
+
+## Defense Matrix
+
+| Attack Vector / Risk | Threat Description | Sentinel Countermeasure |
+| :--- | :--- | :--- |
+| **Prompt Injection** | Adversarial users attempting to hijack agent instructions | Heuristic regex inspection blocking roleplay, overrides, and delimiters |
+| **Filter Evasion** | Zero-width unicode spaces inserted to bypass keyword detectors | Canonical NFKC normalization and zero-width codepoint stripping |
+| **PII Data Egress** | Sensitive user data (SSN, phone, tokens) sent to cloud models | Pre-retrieval masking with pattern substitution before reaching LLMs |
+| **API Abuse & DoS** | Malicious scripts exhausting compute or flood querying | In-memory sliding-window rate limiter per client IP or API key |
+| **Memory Exhaustion** | Enormous payloads designed to crash Python gateway workers | Streaming payload cutoff rejecting bodies $> 2\text{MB}$ with HTTP 413 |
+| **Timing Attacks** | Attackers guessing API keys via string comparison timing | Constant-time `hmac.compare_digest` verification |
+| **Secret Leakage** | LLMs inadvertently echoing DB credentials or connection strings | Output regex scrubber neutralizing database URIs and private keys |
+| **Cross-Site Scripting (XSS)** | Injected malicious HTML/JS rendered on client web interfaces | Output scrubber stripping `<script>`, `javascript:`, and inline handlers |
+
+---
+
+## Security Headers
+
+Sentinel automatically injects OWASP-recommended HTTP response headers on every route:
+
+```http
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(), camera=(), microphone=()
+```

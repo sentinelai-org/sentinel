@@ -1,0 +1,109 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Sentinel",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0ea5e9",
+    "light": "#38bdf8",
+    "dark": "#0284c7",
+    "background": {
+      "dark": "#0B0F19",
+      "light": "#ffffff"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/your-org/sentinel"
+    },
+    {
+      "name": "Swagger UI",
+      "url": "http://localhost:8000/docs"
+    }
+  ],
+  "topbarCta": {
+    "name": "Quickstart",
+    "url": "/quickstart"
+  },
+  "tabs": [
+    {
+      "name": "Documentation",
+      "url": "introduction"
+    },
+    {
+      "name": "SDKs & Libraries",
+      "url": "sdks"
+    },
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    },
+    {
+      "name": "Enterprise SaaS",
+      "url": "enterprise"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Product Overview",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "comparison"
+      ]
+    },
+    {
+      "group": "SDKs & Client Libraries",
+      "pages": [
+        "sdks/overview",
+        "sdks/typescript",
+        "sdks/python"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/chat",
+        "api-reference/streaming",
+        "api-reference/ingest",
+        "api-reference/feedback",
+        "api-reference/health"
+      ]
+    },
+    {
+      "group": "Enterprise Platform",
+      "pages": [
+        "enterprise/saas-integration",
+        "security/overview",
+        "security/authentication",
+        "security/guardrails"
+      ]
+    },
+    {
+      "group": "Under the Hood",
+      "pages": [
+        "architecture/overview",
+        "architecture/rag-pipeline",
+        "architecture/caching",
+        "architecture/router",
+        "architecture/groundedness"
+      ]
+    },
+    {
+      "group": "Deployment & Infra",
+      "pages": [
+        "deployment/docker",
+        "deployment/kubernetes"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/your-org/sentinel",
+    "twitter": "https://x.com"
+  }
+}

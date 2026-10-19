@@ -1,0 +1,90 @@
+---
+title: "Kubernetes & GitOps"
+description: "Deploying Sentinel to Kubernetes via Helm, Kind, and ArgoCD"
+---
+
+Sentinel provides enterprise Helm charts (`deploy/helm/sentinel`) and an ArgoCD Application manifest (`deploy/argocd/application.yaml`) for zero-touch GitOps continuous delivery.
+
+---
+
+## 1. Local Kind Cluster Setup
+
+You can test the entire Kubernetes deployment locally using **Kind** (Kubernetes in Docker):
+
+```bash
+# Create local Kind cluster with ingress mapping
+make kind-up
+
+# Validate Helm chart syntax
+make helm-lint
+
+# Install Helm release onto Kind
+make helm-install
+```
+
+---
+
+## 2. Helm Configuration Values
+
+Key parameters configurable in `deploy/helm/sentinel/values.yaml`:
+
+```yaml
+replicaCount: 3
+
+image:
+  repository: ghcr.io/your-org/sentinel
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: sentinel.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+```
+
+---
+
+## 3. GitOps Continuous Delivery (ArgoCD)
+
+The application manifest at `deploy/argocd/application.yaml` connects ArgoCD to your Git repository:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sentinel
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/sentinel.git
+    targetRevision: HEAD
+    path: deploy/helm/sentinel
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sentinel-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+Whenever code merges to `main`, ArgoCD automatically synchronizes the Helm release to your production Kubernetes cluster.

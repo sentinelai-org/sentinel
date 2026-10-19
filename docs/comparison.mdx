@@ -1,0 +1,41 @@
+---
+title: "Why Sentinel: Feature Comparison"
+description: "How Sentinel compares to raw LLM API calls and DIY internal RAG chains"
+---
+
+When software companies build AI-powered features, they often start by making raw `fetch()` calls to OpenAI or Gemini, or assembling fragile prompt chains with generic libraries. 
+
+Here is why engineering leaders adopt **Sentinel** as a centralized, standardized enterprise AI gateway:
+
+---
+
+## Architecture Comparison
+
+| Feature | Raw LLM APIs (OpenAI / Gemini) | DIY LangChain / In-App Chain | Sentinel Enterprise Gateway |
+| :--- | :---: | :---: | :---: |
+| **Failover on Rate Limits (`429`)** | ❌ Fails customer request | ⚠️ Complex manual retry logic | ✅ **Automatic circuit-breaking failover to local Ollama** |
+| **Hallucination Prevention** | ❌ None (assumes output is correct) | ⚠️ Costly recursive LLM judge | ✅ **Deterministic Groundedness Gate ($\ge 70\%$ overlap)** |
+| **Exact & Semantic Caching** | ❌ None (billed for every token) | ⚠️ Custom Redis cache glue code | ✅ **Sub-5ms 2-Tier Caching (Redis + Qdrant Cosine $\ge 0.90$)** |
+| **Hybrid Search (BM25 + Vectors)** | ❌ None | ⚠️ Manual reciprocal rank math | ✅ **Built-in RRF + Cross-Encoder Re-Ranker** |
+| **Zero-Width Injection Defense** | ❌ Vulnerable to prompt hacking | ❌ Vulnerable | ✅ **NFKC normalization + zero-width codepoint stripping** |
+| **Sensitive PII Redaction** | ❌ Transmits raw user PII to cloud | ⚠️ Complex custom regexes | ✅ **Built-in redaction of SSN, phone, JWT, RSA/SSH keys** |
+| **Client Libraries (Node & Python)** | ⚠️ Basic HTTP wrappers | ⚠️ Heavy dependency chains | ✅ **Lightweight, typed SDKs with streaming async iterators** |
+| **Background Asynchronous Ingest** | ❌ None | ⚠️ Slow synchronous embeddings | ✅ **High-throughput Redis Stream worker queue** |
+| **Cost & Token Accounting** | ⚠️ Provider dashboard only | ⚠️ Ad-hoc logger scripts | ✅ **Per-request `cost_usd`, tokens, and OpenTelemetry OTLP** |
+| **Multi-Tenant Workspace Isolation** | ❌ None | ⚠️ Custom DB partition logic | ✅ **Metadata filter & collection-level tenant segregation** |
+
+---
+
+## ROI for Enterprise Engineering Teams
+
+<CardGroup cols={3}>
+  <Card title="90%+ Cost Reduction" icon="arrow-trend-down" color="#10b981">
+    Repeated company queries (e.g. employee onboarding, product FAQs, API error lookups) are resolved in under 5ms from cache at $0.00 cost.
+  </Card>
+  <Card title="Zero Vendor Lock-in" icon="link-slash" color="#0ea5e9">
+    Switch or fallback between Google Gemini, local Ollama, Claude, or OpenAI without altering a single line of application code across your services.
+  </Card>
+  <Card title="Total Compliance" icon="file-shield" color="#6366f1">
+    PII never leaves the corporate boundary unmasked, and all model queries and citations are auditable via OpenTelemetry traces exported to Jaeger or Datadog.
+  </Card>
+</CardGroup>

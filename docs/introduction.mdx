@@ -1,0 +1,140 @@
+---
+title: "Sentinel: The Enterprise AI Gateway"
+description: "Turn foundation models into production-ready, hallucination-free, cost-optimized RAG APIs for Node.js and Python applications"
+---
+
+<img
+  className="block dark:hidden rounded-xl border border-slate-200"
+  src="https://raw.githubusercontent.com/Isvvc777/sentinel/main/assets/banner-light.png"
+  alt="Sentinel Banner Light"
+/>
+<img
+  className="hidden dark:block rounded-xl border border-slate-800"
+  src="https://raw.githubusercontent.com/Isvvc777/sentinel/main/assets/banner-dark.png"
+  alt="Sentinel Banner Dark"
+/>
+
+## Stop Gluing Raw LLM APIs into Production
+
+Calling raw foundation model APIs (OpenAI, Google Gemini, Anthropic) directly from your application backends is fragile:
+* **Hallucinations slip into user answers** because there is no automated factual grounding verification.
+* **Costs scale linearly** because identical queries repeatedly hit commercial LLM billing meters.
+* **Rate limits (`HTTP 429`) break user sessions** during cloud provider traffic spikes.
+* **Adversaries exploit prompt injection & leak PII** without unified perimeter defenses.
+
+**Sentinel is the Enterprise AI Gateway** that sits between your applications (Node.js, Python, React, Mobile) and foundation models. It provides a unified, production-grade REST API and official client libraries that handle retrieval, caching, resilience, security, and verification out of the box.
+
+---
+
+## Integrate in 3 Lines of Code
+
+<CodeGroup>
+```typescript Node.js / TypeScript
+import { SentinelClient } from '@sentinel-ai/client';
+
+const sentinel = new SentinelClient({ apiKey: process.env.SENTINEL_API_KEY });
+const response = await sentinel.chat({ question: "How do Kubernetes Deployments handle rolling updates?" });
+
+console.log(response.answer);
+console.log(`Grounded: ${response.meta.groundedness_passed} | Cost: $${response.meta.cost_usd}`);
+```
+
+```python Python
+from sentinel import SentinelClient
+
+client = SentinelClient(api_key="sk-live-enterprise-key")
+response = client.chat(question="How do Kubernetes Deployments handle rolling updates?")
+
+print(response.answer)
+print(f"Grounded: {response.meta.groundedness_passed} | Cost: ${response.meta.cost_usd}")
+```
+
+```bash cURL
+curl -X POST https://api.sentinel.yourdomain.com/v1/chat \
+  -H "Authorization: Bearer sk-live-enterprise-key" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How do Kubernetes Deployments handle rolling updates?"}'
+```
+</CodeGroup>
+
+---
+
+## Why Enterprises Choose Sentinel
+
+<CardGroup cols={2}>
+  <Card title="Zero Downtime Failover" icon="shield-halved" color="#0ea5e9">
+    Primary traffic routes to Google Gemini 2.5 Flash. When cloud APIs throttle or fail (`429`/`503`), Sentinel automatically falls back to local Ollama (`qwen2.5`) with zero client-side code changes.
+  </Card>
+  <Card title="Groundedness Gate (0% Hallucinations)" icon="certificate" color="#10b981">
+    A deterministic runtime content-overlap evaluator intercepts any response with under 70% factual support from your documentation before it reaches the customer.
+  </Card>
+  <Card title="Two-Tier Caching (90% Cost Reduction)" icon="bolt" color="#f59e0b">
+    Sub-5ms SHA-256 exact matching in Redis paired with Qdrant vector semantic caching (cosine $\ge 0.90$) serves repeat queries instantly at zero LLM cost.
+  </Card>
+  <Card title="Enterprise Security & PII Redaction" icon="lock" color="#6366f1">
+    Automatic zero-width injection neutralization, SSN/phone/JWT masking, database URI scrubbing, OWASP security headers, and sliding-window rate limiting.
+  </Card>
+</CardGroup>
+
+---
+
+## Commercial Architecture: The Centralized Gateway Pattern
+
+Deploy Sentinel as a private microservice or multi-tenant cloud platform. Your engineering teams connect internal portals, customer apps, and Slack bots directly to Sentinel:
+
+```mermaid
+flowchart LR
+    subgraph Clients["Your Applications & Services"]
+        NodeApp["Node.js / Express Backend"]
+        ReactUI["Next.js / React Chat Widget"]
+        PySvc["Python Microservice / Celery"]
+        Bot["Slack / Teams Internal Bot"]
+    end
+
+    subgraph Sentinel["Sentinel Enterprise Gateway"]
+        Auth["API Key Auth & Rate Limiter"]
+        Perimeter["Zero-Width & Injection Guardrail"]
+        Cache["2-Tier Exact & Semantic Cache"]
+        RAG["Hybrid Search (BM25 + Dense RRF)"]
+        Rerank["Cross-Encoder Precision Re-Ranker"]
+        Router["Cost & Resilient LLM Router"]
+        Gate["Groundedness Verification Gate"]
+    end
+
+    subgraph Upstream["Upstream Infrastructure"]
+        Qdrant[(Managed Qdrant Vector DB)]
+        Redis[(Managed Redis Queue & Cache)]
+        Gemini["Google Gemini Cloud"]
+        Ollama["Local Ollama Fallback"]
+    end
+
+    Clients -->|SDK / REST API| Auth
+    Auth --> Perimeter
+    Perimeter --> Cache
+    Cache --> RAG
+    RAG --> Rerank
+    Rerank --> Router
+    Router --> Gemini
+    Router -.->|Fallback on 429| Ollama
+    Router --> Gate
+    Gate --> Clients
+
+    RAG -.-> Qdrant
+    Cache -.-> Redis
+```
+
+---
+
+## Next Steps for Developers
+
+<CardGroup cols={3}>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/typescript">
+    Complete TypeScript library with streaming async iterators.
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python">
+    Async/sync Python client with FastAPI and Celery examples.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Comprehensive REST and SSE streaming endpoint specs.
+  </Card>
+</CardGroup>

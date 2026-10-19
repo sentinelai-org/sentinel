@@ -1,0 +1,114 @@
+---
+title: "Evaluation & Feedback"
+description: "Submit user ratings, ground-truth corrections, track satisfaction, and export fine-tuning datasets"
+---
+
+Production RAG systems require continuous feedback loops. Sentinel includes full feedback collection APIs to record user satisfaction (+1 / -1), capture human corrections, and export fine-tuning datasets formatted for LLM instruction tuning.
+
+---
+
+## 1. Submit User Feedback
+
+`POST /v1/feedback`
+
+### Request Body
+
+<ParamField body="request_id" type="string" required>
+  The `request_id` returned in the original `/v1/chat` response.
+</ParamField>
+
+<ParamField body="rating" type="integer" required>
+  User rating: `1` for thumbs-up (positive), `-1` for thumbs-down (negative).
+</ParamField>
+
+<ParamField body="comment" type="string">
+  Optional textual explanation of the rating.
+</ParamField>
+
+<ParamField body="correction" type="string">
+  Optional human ground-truth corrected text if the model answer was imperfect.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Optional arbitrary client metadata (e.g. `{"client": "web_ui", "app_version": "2.4.0"}`).
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST http://localhost:8000/v1/feedback \
+  -H "Authorization: Bearer sk-live-prod-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_id": "req_8f110c4d-a279-450b-93df-81ba66020c24",
+    "rating": -1,
+    "comment": "Incorrect parameter cited in step 2",
+    "correction": "The correct parameter is maxSurge, not maxSurgeCount."
+  }'
+```
+
+### Response Example (201 Created)
+
+```json
+{
+  "status": "recorded",
+  "request_id": "req_8f110c4d-a279-450b-93df-81ba66020c24",
+  "feedback_id": "fb_e1289b02a901"
+}
+```
+
+---
+
+## 2. Get Satisfaction Statistics
+
+`GET /v1/feedback/stats`
+
+Returns aggregated satisfaction analytics across all recorded user interactions.
+
+```bash
+curl -X GET http://localhost:8000/v1/feedback/stats \
+  -H "Authorization: Bearer sk-live-prod-key"
+```
+
+### Response Example (200 OK)
+
+```json
+{
+  "total_feedback": 142,
+  "positive_count": 128,
+  "negative_count": 14,
+  "satisfaction_rate": 90.14
+}
+```
+
+---
+
+## 3. Export Instruction Fine-Tuning Dataset
+
+`GET /v1/feedback/export`
+
+Exports all human-corrected queries as a standard ShareGPT / OpenAI chat JSONL fine-tuning dataset ready for model alignment.
+
+```bash
+curl -X GET http://localhost:8000/v1/feedback/export \
+  -H "Authorization: Bearer sk-live-prod-key"
+```
+
+### Response Example (200 OK)
+
+```json
+[
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the parameter for rolling updates in Kubernetes?"
+      },
+      {
+        "role": "assistant",
+        "content": "The correct parameter is maxSurge, not maxSurgeCount."
+      }
+    ]
+  }
+]
+```

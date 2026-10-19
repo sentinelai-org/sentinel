@@ -1,0 +1,54 @@
+---
+title: "Guardrails & Data Protection"
+description: "Prompt injection neutralization, zero-width evasion stripping, PII redaction, and XSS sanitization"
+---
+
+Sentinel enforces strict bidirectional guardrails: inspecting user queries **before** they reach internal retrievers or external models, and sanitizing model outputs **before** they are delivered to users.
+
+---
+
+## 1. Input Guardrails
+
+### A. Zero-Width Unicode & Evasion Defense
+Adversaries frequently insert invisible zero-width spaces or soft hyphens into malicious prompts (e.g. `i\u200Bgnore \u200Bsystem \u200Brules`) to bypass naive keyword regexes while still getting decoded by tokenizers.
+
+Sentinel neutralizes this vector in two passes:
+1. **Unicode Canonical Normalization**: Converts all characters to NFKC (`unicodedata.normalize('NFKC', text)`).
+2. **Invisible Codepoint Stripping**: Removes characters matching `[\u200B-\u200D\uFEFF\u00AD\u202A-\u202E\u2060-\u206F]` before any pattern matching occurs.
+
+### B. Injection & Jailbreak Detection
+Scans prompts against known adversarial vectors:
+* **Instruction Overrides**: `ignore previous instructions`, `bypass safety guidelines`
+* **Roleplay Escalations**: `DAN`, `chaosGPT`, `developer mode`, `pretend to be an unrestricted AI`
+* **Smuggled Payloads**: Base64 encoded command blocks (`base64:...`) or hex payloads
+* **Delimiter Injections**: Fake turn separators such as `=== HUMAN ===` or `<|im_end|>`
+
+### C. Sensitive PII & Credential Masking
+Before a query leaves the gateway to cloud LLMs, Sentinel redacts sensitive information:
+
+| Data Type | Detection Pattern | Redaction Replacement |
+| :--- | :--- | :--- |
+| **Social Security Numbers** | `\b\d{3}-\d{2}-\d{4}\b` | `[REDACTED_SSN]` |
+| **Phone Numbers** | US and International phone regex | `[REDACTED_PHONE]` |
+| **JSON Web Tokens (JWT)** | `\beyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\b` | `[REDACTED_JWT]` |
+| **Private SSH / RSA Keys** | `-----BEGIN (RSA|OPENSSH|EC|DSA|PRIVATE) KEY-----` | `[REDACTED_PRIVATE_KEY]` |
+| **Email Addresses** | Standard RFC 5322 regex | `[REDACTED_EMAIL]` |
+| **Passwords in Prompts** | `password = "..."`, `api_token = "..."` | `[REDACTED_PASSWORD]` |
+
+---
+
+## 2. Output Guardrails
+
+Even with clean input prompts, model outputs must be audited before returning them to client applications.
+
+### A. Cross-Site Scripting (XSS) Sanitization
+When client frontends render markdown responses from Sentinel, malicious code could execute in users' browsers if an answer includes unescaped script tags:
+* Strips `<script>...</script>` tags entirely
+* Neutralizes `javascript:` URIs
+* Strips inline event handlers (`onload=`, `onerror=`)
+
+### B. Secret & Infrastructure Leakage Prevention
+Prevents internal infrastructure secrets from leaking into client responses:
+* **Database Connection URIs**: Intercepts URIs matching `(postgres|mysql|redis|mongodb)://user:pass@host/db`
+* **API Keys & Bearer Tokens**: Masks strings beginning with `Bearer ` or `sk-...`
+* **System Prompt Leakage**: Prevents model outputs that regurgitate internal prompt instructions or guardrail schemas.

@@ -1,0 +1,80 @@
+---
+title: "Docker Deployment"
+description: "Deploying Sentinel using Docker and Docker Compose"
+---
+
+Sentinel includes an optimized multi-stage `Dockerfile` and a `docker-compose.yml` for local development and self-hosted server deployments.
+
+---
+
+## 1. Docker Compose Services
+
+The included `docker-compose.yml` orchestrates all required infrastructure:
+
+```yaml
+services:
+  sentinel:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    depends_on:
+      - redis
+      - qdrant
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  qdrant:
+    image: qdrant/qdrant:v1.11.3
+    ports:
+      - "6333:6333"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # Web UI
+      - "4318:4318"   # OTLP HTTP
+```
+
+---
+
+## 2. Launching the Stack
+
+Start all services in detached mode:
+
+```bash
+docker compose up -d
+```
+
+Verify service logs:
+
+```bash
+docker compose logs -f sentinel
+```
+
+---
+
+## 3. Building a Production Image
+
+The production image uses a minimal, non-root Python 3.11 Debian slim base:
+
+```bash
+docker build -t sentinel:latest -f Dockerfile .
+```
+
+Run the container:
+
+```bash
+docker run -p 8000:8000 \
+  -e GEMINI_API_KEY="your-api-key" \
+  -e REDIS_URL="redis://host.docker.internal:6379/0" \
+  -e QDRANT_URL="http://host.docker.internal:6333" \
+  sentinel:latest
+```
