@@ -485,7 +485,7 @@ sentinel/
 │   └── workers/           # Redis Streams consumer and async ingestion worker
 ├── sdk/                   # Official Client Libraries
 │   ├── python/            # sentinel-client (Sync & Async client, streaming, models)
-│   └── typescript/        # @sentinel-ai/client (Node.js SDK & React useSentinelChat hook)
+│   └── typescript/        # @lansar/sentinel-client (Node.js SDK & React useSentinelChat hook)
 ├── docs/                  # Enterprise Documentation & Guides
 │   ├── ENTERPRISE_SAAS_INTEGRATION.md  # Comprehensive Enterprise Integration Guide
 │   └── ...                             # Mintlify docs site files
@@ -515,7 +515,7 @@ sentinel/
 - [x] **Phase 5: Real-Time Streaming & Queuing** — Server-Sent Events (SSE), Redis Streams async ingestion worker, interactive UI.
 - [x] **Phase 6: Cloud Native DevOps** — Helm charts, Kind local Kubernetes, Argo CD GitOps, GitHub Actions quality gates.
 - [x] **Phase 7: Closed-Loop Feedback & Hardening** — Thumbs up/down feedback API, DPO dataset export, Locust load testing, OWASP security headers, sliding-window rate limiting.
-- [x] **Phase 8: Multi-Turn Memory & Enterprise SDKs** — Redis session thread management, automated query contextualization, official TypeScript/React SDK (`@sentinel-ai/client`), and official Python SDK (`sentinel-client`).
+- [x] **Phase 8: Multi-Turn Memory & Enterprise SDKs** — Redis session thread management, automated query contextualization, official TypeScript/React SDK (`@lansar/sentinel-client`), and official Python SDK (`sentinel-client`).
 
 ---
 
