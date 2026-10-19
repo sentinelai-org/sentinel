@@ -22,7 +22,7 @@ def fake_llm() -> FakeProvider:
 
 
 @pytest.mark.asyncio
-async def test_enterprise_manager_lifecycle():
+async def test_enterprise_manager_lifecycle() -> None:
     """Test core EnterpriseManager operations."""
     manager = EnterpriseManager()
 
@@ -86,13 +86,17 @@ async def test_enterprise_manager_lifecycle():
     # Key rotation
     old_test_key = ent.test_api_key
     updated_ent, new_test_key = await manager.rotate_key(ent.id, "test")
+    assert updated_ent is not None
+    assert new_test_key is not None
     assert new_test_key != old_test_key
     assert updated_ent.test_api_key == new_test_key
     assert new_test_key.startswith("sk_test_")
 
 
 @pytest.mark.asyncio
-async def test_admin_api_endpoints(fake_llm: FakeProvider, in_memory_cache: InMemoryResponseCache):
+async def test_admin_api_endpoints(
+    fake_llm: FakeProvider, in_memory_cache: InMemoryResponseCache
+) -> None:
     """Test /v1/admin/enterprises endpoints."""
     settings = Settings(
         api_key_auth_enabled=True,

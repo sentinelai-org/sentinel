@@ -147,5 +147,5 @@ class SessionManager:
     async def close(self) -> None:
         """Close the underlying Redis connection pool."""
         if self._redis is not None:
-            await self._redis.aclose()
+            await self._redis.close()
             self._redis = None

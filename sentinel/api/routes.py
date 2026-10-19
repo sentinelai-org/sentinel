@@ -895,7 +895,6 @@ async def admin_test_query(
     if graph:
         initial_state = AgentState(
             question=body.question,
-            raw_question=body.question,
             request_id=f"adm_test_{uuid.uuid4().hex[:8]}",
             session_id=f"sess_adm_{ent.id}",
         )
