@@ -1,0 +1,58 @@
+{
+  "name": "@sentinel-ai/client",
+  "version": "0.1.0",
+  "description": "Official TypeScript & Node.js client library for the Sentinel Enterprise AI & RAG Gateway",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "rag",
+    "llm",
+    "ai",
+    "gateway",
+    "sentinel",
+    "enterprise",
+    "typescript",
+    "sdk"
+  ],
+  "author": "Sentinel Team <engineering@sentinel.ai>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/sentinel.git",
+    "directory": "sdk/typescript"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.3.0",
+    "react": "^18.3.1",
+    "typescript": "^5.4.0"
+  }
+}

@@ -18,10 +18,20 @@ help:
 	@echo "  make eval-gate       Run Groundedness Quality Gate evaluation benchmark"
 	@echo "  make load-test       Run automated Locust load testing suite"
 	@echo "  make docs-dev        Run local Mintlify documentation live preview"
+	@echo "  make sdk-build       Build both Python and TypeScript SDK packages"
+	@echo "  make sdk-test        Run test suites for both SDK packages"
 	@echo "  make clean           Remove temporary cache files"
 
 docs-dev:
 	npx -y mintlify dev --dir docs
+
+sdk-build:
+	npx -y typescript --project sdk/typescript/tsconfig.json
+	pip install -e sdk/python
+
+sdk-test:
+	pytest sdk/python/tests -v
+	node --test sdk/typescript/test/client.test.mjs
 
 install:
 	pip install -e ".[dev]"
