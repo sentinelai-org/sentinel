@@ -10,10 +10,10 @@ from sentinel.agent.nodes import AgentNodeHandler
 from sentinel.agent.state import AgentState
 
 
-def route_input_guardrail(state: AgentState) -> Literal["retrieve", "refuse_unsafe"]:
+def route_input_guardrail(state: AgentState) -> Literal["contextualize_query", "refuse_unsafe"]:
     """Conditional router based on input safety guardrail check."""
     if state.get("guardrail_passed", True):
-        return "retrieve"
+        return "contextualize_query"
     return "refuse_unsafe"
 
 
@@ -31,6 +31,7 @@ def create_agent_graph(handler: AgentNodeHandler) -> Any:
     # Register graph nodes
     workflow.add_node("guardrail_input", handler.guardrail_input)
     workflow.add_node("refuse_unsafe", handler.refuse_unsafe)
+    workflow.add_node("contextualize_query", handler.contextualize_query)
     workflow.add_node("retrieve", handler.retrieve)
     workflow.add_node("grade_context", handler.grade_context)
     workflow.add_node("generate", handler.generate)
@@ -45,11 +46,12 @@ def create_agent_graph(handler: AgentNodeHandler) -> Any:
         "guardrail_input",
         route_input_guardrail,
         {
-            "retrieve": "retrieve",
+            "contextualize_query": "contextualize_query",
             "refuse_unsafe": "refuse_unsafe",
         },
     )
     workflow.add_edge("refuse_unsafe", "finalize")
+    workflow.add_edge("contextualize_query", "retrieve")
 
     # Step 2: Context Retrieval & Grading
     workflow.add_edge("retrieve", "grade_context")

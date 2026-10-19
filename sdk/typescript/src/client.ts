@@ -18,6 +18,7 @@ import type {
   IngestJobResponse,
   IngestJobStatus,
   SentinelClientOptions,
+  SessionHistoryResponse,
   StreamChunk,
 } from './types.js';
 
@@ -211,6 +212,33 @@ export class SentinelClient {
 
     await this.handleErrors(res);
     return (await res.json()) as FeedbackResponse;
+  }
+
+  /**
+   * Retrieve chronological message history for a conversation thread.
+   */
+  async getSessionHistory(sessionId: string): Promise<SessionHistoryResponse> {
+    const res = await this.fetchFn(`${this.baseUrl}/v1/chat/sessions/${sessionId}`, {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    await this.handleErrors(res);
+    return (await res.json()) as SessionHistoryResponse;
+  }
+
+  /**
+   * Clear all message history for a given conversation thread.
+   */
+  async clearSession(sessionId: string): Promise<boolean> {
+    const res = await this.fetchFn(`${this.baseUrl}/v1/chat/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: this.headers,
+    });
+
+    await this.handleErrors(res);
+    const data = (await res.json()) as { success?: boolean };
+    return Boolean(data.success ?? true);
   }
 
   /**

@@ -25,6 +25,9 @@ export function useSentinelChat(options: UseSentinelChatOptions = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+  const [sessionId, setSessionId] = useState<string>(
+    () => options.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+  );
 
   const client = useMemo(
     () =>
@@ -55,7 +58,7 @@ export function useSentinelChat(options: UseSentinelChatOptions = {}) {
       try {
         const stream = client.chatStream({
           question,
-          sessionId: options.sessionId,
+          sessionId,
         });
 
         let accumulated = '';
@@ -92,7 +95,7 @@ export function useSentinelChat(options: UseSentinelChatOptions = {}) {
         setIsStreaming(false);
       }
     },
-    [client, isStreaming, options.sessionId]
+    [client, isStreaming, sessionId]
   );
 
   const clearMessages = useCallback(() => {
@@ -100,11 +103,27 @@ export function useSentinelChat(options: UseSentinelChatOptions = {}) {
     setError(null);
   }, []);
 
+  const clearSession = useCallback(async () => {
+    if (sessionId) {
+      try {
+        await client.clearSession(sessionId);
+      } catch {
+        // Ignore network errors during session clearing
+      }
+    }
+    const newSessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    setSessionId(newSessionId);
+    setMessages([]);
+    setError(null);
+  }, [client, sessionId]);
+
   return {
     messages,
     sendMessage,
     isStreaming,
     error,
+    sessionId,
     clearMessages,
+    clearSession,
   };
 }

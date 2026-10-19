@@ -343,3 +343,54 @@ flowchart TD
 | **Audit Trails & Observability** | Distributed tracing with OpenTelemetry & OTLP export to Jaeger | Every retrieval, prompt, cost, and token is permanently auditable |
 | **Model Verification** | Runtime Groundedness Gate ($\ge 70\%$ threshold) | Eliminates hallucinated facts from reaching end users |
 
+---
+
+## 5. Enterprise Commercialization: API Test vs. Production Authorization Gate
+
+When an enterprise signs up or engages to adopt Sentinel, Sentinel enforces a dual-environment security and monetization workflow:
+
+```mermaid
+flowchart TD
+    Enterprise[Enterprise Client Onboards] --> IssueKeys[Provision Credentials: sk_test_ & sk_live_]
+    
+    IssueKeys --> Sandbox[🧪 API Test / Sandbox Environment]
+    IssueKeys --> ProdAttempt[🚀 API Production Environment]
+    
+    Sandbox -->|sk_test_...| Allowed[Queries Served in Sandbox Mode]
+    Allowed --> Monitor[Admin Monitors Test Accuracy & Groundedness in UI]
+    
+    ProdAttempt -->|sk_live_...| GateCheck{"Admin Authorized for Production?"}
+    
+    GateCheck -- "No (Status: Pending)" --> Reject["HTTP 403 Forbidden: Enterprise Pending Authorization"]
+    GateCheck -- "Yes (Status: Authorized)" --> LiveAllowed["Live Production Traffic Served + Production Rate Limits"]
+    
+    Monitor --> AdminAction["Admin Reviews Integration in /admin Console"]
+    AdminAction -->|"Click 'Authorize for Production'"| GateCheck
+```
+
+### 1. Dual-Environment Credentials
+* **Sandbox / Test API Key (`sk_test_...`)**: Issued instantly to client developers. Grants access to query endpoints, test real-time streaming, upload pilot documents, and verify groundedness scores with zero risk to production workloads.
+* **Production API Key (`sk_live_...`)**: Reserved for production workloads with higher SLAs and increased rate limits.
+
+### 2. The Production Authorization Gate
+To prevent unauthorized or rogue clients from consuming production GPU/LLM quotas without contract approval or security clearance, Sentinel's gateway intercepts any production request:
+* If the enterprise account is in `pending` or `suspended` status, the gateway returns:
+  ```json
+  {
+    "detail": "Enterprise 'Nova Health AI' is pending production authorization. An administrator must authorize your account before live traffic can be served."
+  }
+  ```
+* Once verified, an administrator clicks **"Authorize for Production"** in the **Sentinel Enterprise Admin Console** (`http://localhost:8000/admin`), instantly unlocking live traffic.
+
+### 3. Admin Management Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/v1/admin/enterprises` | List all onboarded enterprises, test/production credentials, status, and request counts. |
+| `POST` | `/v1/admin/enterprises` | Onboard a new enterprise organization with automatically provisioned test and live keys. |
+| `POST` | `/v1/admin/enterprises/{id}/authorize` | Admin grants live production clearance and sets production rate limits. |
+| `POST` | `/v1/admin/enterprises/{id}/revoke` | Admin revokes live production authorization (returns HTTP 403 immediately). |
+| `POST` | `/v1/admin/enterprises/{id}/keys/rotate` | Rotates either `test` or `production` API key without affecting the other environment. |
+| `POST` | `/v1/admin/test-query` | Diagnostic test runner allowing admins to simulate test or live queries as that enterprise. |
+
+

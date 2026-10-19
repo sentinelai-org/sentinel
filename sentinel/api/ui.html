@@ -1021,6 +1021,209 @@
             51%, 100% { opacity: 0; }
         }
 
+        /* VIEW 5: ENTERPRISE & COMMERCIAL ADMIN */
+        .env-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .env-badge.test {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .env-badge.production {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+        }
+        .status-pill.authorized {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        .status-pill.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+        .status-pill.suspended {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+        .enterprise-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .enterprise-card:hover {
+            border-color: var(--border-highlight);
+        }
+        .enterprise-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .enterprise-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .enterprise-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .enterprise-sub {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .env-boxes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        @media (max-width: 768px) {
+            .env-boxes-grid { grid-template-columns: 1fr; }
+        }
+        .env-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .env-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .key-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-input);
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+        .key-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: #38bdf8;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: color 0.15s;
+        }
+        .btn-icon:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .admin-actions-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .btn-authorize {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s;
+        }
+        .btn-authorize:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 12px var(--success-glow);
+        }
+        .btn-revoke {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-revoke:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+        .filter-pills {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .filter-pill {
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-pill.active {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
         @media (max-width: 900px) {
             .playground-sidebar { display: none; }
             .ingest-grid { grid-template-columns: 1fr; }
@@ -1060,9 +1263,20 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
                 <span>Cluster Health</span>
             </button>
+            <button class="nav-tab" onclick="switchTab('enterprise')" id="tab-btn-enterprise" style="border-left: 1px solid var(--border-highlight); margin-left: 4px; padding-left: 14px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+                <span>Enterprise Admin</span>
+            </button>
         </nav>
 
         <div class="header-tools">
+            <button class="btn-ghost" onclick="startNewThread()" title="Start a fresh conversation thread" style="border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span>New Thread</span>
+            </button>
+            <div class="status-badge" id="session-badge" style="background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25);">
+                <span id="session-display">Thread: Init</span>
+            </div>
             <div class="status-badge" id="gateway-status">
                 <div class="status-dot"></div>
                 Gateway Online
@@ -1348,6 +1562,161 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
             </div>
         </div>
 
+        <!-- TAB 5: ENTERPRISE & COMMERCIALIZATION ADMIN -->
+        <div class="tab-view" id="view-enterprise">
+            <div class="dashboard-container" style="max-width: 1200px;">
+                <div class="section-header" style="flex-direction:row; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+                    <div>
+                        <div class="section-title">Enterprise Commercialization & Authorization Console</div>
+                        <div class="section-desc">Manage tenant onboarding, inspect API Sandbox (Test) vs. Production credentials, and grant live authorizations.</div>
+                    </div>
+                    <button class="btn-primary" onclick="openOnboardModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        <span>+ Onboard Enterprise</span>
+                    </button>
+                </div>
+
+                <!-- KPI Grid -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Enterprises</div>
+                        <div class="kpi-value" id="ent-kpi-total">3</div>
+                        <div class="kpi-sub" style="color:var(--text-secondary)">Registered organizations</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Production Live</div>
+                        <div class="kpi-value" style="color:var(--success)" id="ent-kpi-authorized">1</div>
+                        <div class="kpi-sub">Authorized for live traffic</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Pending Approval</div>
+                        <div class="kpi-value" style="color:var(--warning)" id="ent-kpi-pending">2</div>
+                        <div class="kpi-sub" style="color:var(--warning)">Awaiting admin review</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Sandbox Queries</div>
+                        <div class="kpi-value" style="color:var(--accent)" id="ent-kpi-test-reqs">192</div>
+                        <div class="kpi-sub">Test environment volume</div>
+                    </div>
+                </div>
+
+                <!-- Environment & Status Filter -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div class="filter-pills" id="ent-status-filter">
+                        <button class="filter-pill active" onclick="filterEnterprises('all', this)">All Clients</button>
+                        <button class="filter-pill" onclick="filterEnterprises('pending', this)">⏳ Pending Approval</button>
+                        <button class="filter-pill" onclick="filterEnterprises('authorized', this)">✅ Authorized Live</button>
+                        <button class="filter-pill" onclick="filterEnterprises('suspended', this)">🚫 Suspended</button>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">
+                        Auto-refreshing via <code style="color:var(--accent);">/v1/admin/enterprises</code>
+                    </div>
+                </div>
+
+                <!-- Enterprise Cards Grid -->
+                <div id="enterprises-list" style="display:flex; flex-direction:column; gap:18px;">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <!-- Interactive Enterprise API Test & Verification Sandbox -->
+                <div class="card-panel" style="margin-top: 14px; border-color: rgba(14, 165, 233, 0.4);">
+                    <div class="panel-heading">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:1.1rem;">🧪</span>
+                            <span>Enterprise API Diagnostic Sandbox & Production Authorization Verifier</span>
+                        </div>
+                        <span class="env-badge test" id="runner-env-badge">TEST (SANDBOX)</span>
+                    </div>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">
+                        Simulate API calls as any onboarded enterprise client to test their integration before or after authorizing them. If an enterprise is in <b>Pending</b> status, calls to the <b>Production</b> environment will be automatically rejected by Sentinel's Authorization Gate (HTTP 403 Forbidden).
+                    </p>
+
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px;">
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Select Enterprise Client:</label>
+                            <select id="runner-enterprise-select" style="background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:8px; outline:none; font-size:0.88rem;" onchange="onRunnerSelectChange()">
+                                <!-- Dynamically populated -->
+                            </select>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Target Environment:</label>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" class="btn-ghost" id="runner-btn-test" onclick="setRunnerEnv('test')" style="flex:1; background:rgba(245, 158, 11, 0.15); color:#fbbf24; border-color:rgba(245, 158, 11, 0.4);">
+                                    🧪 Sandbox
+                                </button>
+                                <button type="button" class="btn-ghost" id="runner-btn-prod" onclick="setRunnerEnv('production')" style="flex:1;">
+                                    🚀 Production
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Diagnostic Question / Query:</label>
+                        <textarea id="runner-question" style="background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:12px; border-radius:8px; outline:none; font-size:0.9rem; min-height:80px; resize:vertical;" placeholder="e.g. How do Kubernetes Deployments handle rolling updates?">How do Kubernetes Deployments handle rolling updates?</textarea>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:0.78rem; color:var(--text-secondary);" id="runner-key-preview">
+                            Key: <code style="color:#38bdf8; font-family:monospace;">sk_test_...</code>
+                        </div>
+                        <button class="btn-primary" onclick="runAdminDiagnosticQuery()" id="runner-submit-btn">
+                            <span>Execute Diagnostic Call</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Diagnostic Response Box -->
+                    <div id="runner-response-container" style="display:none; margin-top:12px;">
+                        <!-- Dynamically filled with test response or 403 authorization error -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Onboard Enterprise Modal -->
+    <div class="modal-overlay" id="onboard-modal">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-title">🏢 Onboard New Enterprise Client</div>
+            <p style="font-size:0.82rem; color:var(--text-secondary);">
+                Register a new enterprise client. Sentinel will automatically provision both a Sandbox (Test) API key and a Production API key with rate limits.
+            </p>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
+                <div>
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Company / Enterprise Name</label>
+                    <input type="text" id="onboard-name" style="width:100%; background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:8px; outline:none; font-size:0.88rem;" placeholder="e.g. Apex Global Logistics">
+                </div>
+                <div>
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Technical Contact Email</label>
+                    <input type="email" id="onboard-email" style="width:100%; background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:8px; outline:none; font-size:0.88rem;" placeholder="e.g. tech-lead@apexlogistics.com">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                        <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Subscription Plan</label>
+                        <select id="onboard-plan" style="width:100%; background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:8px; outline:none; font-size:0.88rem;">
+                            <option value="trial">Trial (Sandbox Only)</option>
+                            <option value="growth" selected>Growth Tier</option>
+                            <option value="enterprise">Enterprise Tier</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Rate Limit (Req/min)</label>
+                        <input type="number" id="onboard-ratelimit" style="width:100%; background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:8px; outline:none; font-size:0.88rem;" value="300">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-secondary);">Commercial / Compliance Notes</label>
+                    <textarea id="onboard-notes" style="width:100%; background:var(--bg-input); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:8px; outline:none; font-size:0.88rem; height:60px; resize:none;" placeholder="e.g. Enterprise SLA, HIPAA BAA requested, Node.js SDK pilot"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top:16px;">
+                <button class="btn-ghost" onclick="closeOnboardModal()">Cancel</button>
+                <button class="btn-primary" onclick="submitOnboardEnterprise()">Provision Keys & Onboard</button>
+            </div>
+        </div>
     </div>
 
     <!-- Ground-Truth Feedback Modal -->
@@ -1367,6 +1736,48 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
     </div>
 
     <script>
+        // Multi-Turn Conversational Memory Thread State
+        let activeSessionId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+        function updateSessionBadge() {
+            const badge = document.getElementById('session-display');
+            if (badge) badge.innerText = `Thread: ${activeSessionId.slice(0, 14)}...`;
+            const ctrlInput = document.getElementById('ctrl-session-id');
+            if (ctrlInput) ctrlInput.value = activeSessionId;
+        }
+
+        async function startNewThread() {
+            if (confirm("Start a new conversation thread? Current context will be reset.")) {
+                try {
+                    await fetch(`/v1/chat/sessions/${activeSessionId}`, { method: 'DELETE' });
+                } catch (e) {}
+                activeSessionId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+                updateSessionBadge();
+                const container = document.getElementById('chat-container');
+                container.innerHTML = `
+                    <div class="welcome-hero" id="welcome-hero">
+                        <div class="welcome-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                        </div>
+                        <div class="welcome-title">Sentinel Enterprise Gateway</div>
+                        <div class="welcome-sub">
+                            Fresh conversation thread initialized (<span style="color:var(--accent); font-family:monospace">${activeSessionId}</span>). Multi-turn contextual memory is active!
+                        </div>
+                        <div class="prompt-grid">
+                            <div class="prompt-card" onclick="usePrompt('How do Kubernetes Services load balance traffic across Pod endpoints?')">
+                                <h4>⚖️ Service Load Balancing</h4>
+                                <p>kube-proxy, iptables & IPVS modes</p>
+                            </div>
+                            <div class="prompt-card" onclick="usePrompt('How do Kubernetes Deployments handle rolling updates?')">
+                                <h4>🔄 Rolling Updates</h4>
+                                <p>maxSurge, maxUnavailable & rollout status</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         // Tab switching
         function switchTab(tabId) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -1380,6 +1791,7 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
 
             if (tabId === 'analytics') refreshStats();
             if (tabId === 'health') refreshHealthProbes();
+            if (tabId === 'enterprise') loadEnterprises();
         }
 
         function toggleSidebar() {
@@ -1468,8 +1880,8 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
 
             const container = document.getElementById('chat-container');
             const streamEnabled = document.getElementById('ctrl-stream-toggle').checked;
-            const sessionId = document.getElementById('ctrl-session-id').value || 'tenant_default';
-            const apiKey = document.getElementById('ctrl-api-key').value;
+            const sessionId = document.getElementById('ctrl-session-id')?.value || activeSessionId;
+            const apiKey = document.getElementById('ctrl-api-key')?.value || '';
 
             // Append user bubble
             const userRow = document.createElement('div');
@@ -1823,8 +2235,448 @@ Ensure that client connection pools are updated to target replica nodes. Maximum
             }
         }
 
+        // ===================================================================
+        // ENTERPRISE COMMERCIALIZATION & AUTHORIZATION ADMIN
+        // ===================================================================
+        let allEnterprises = [];
+        let currentEntFilter = 'all';
+        let runnerEnv = 'test';
+
+        async function loadEnterprises() {
+            try {
+                const res = await fetch('/v1/admin/enterprises');
+                if (!res.ok) throw new Error('Failed to load enterprises');
+                allEnterprises = await res.json();
+                
+                // Update KPI Cards
+                const totalEl = document.getElementById('ent-kpi-total');
+                const authEl = document.getElementById('ent-kpi-authorized');
+                const pendEl = document.getElementById('ent-kpi-pending');
+                const reqEl = document.getElementById('ent-kpi-test-reqs');
+
+                if (totalEl) totalEl.innerText = allEnterprises.length;
+                if (authEl) authEl.innerText = allEnterprises.filter(e => e.status === 'authorized' && e.production_allowed).length;
+                if (pendEl) pendEl.innerText = allEnterprises.filter(e => e.status === 'pending' || !e.production_allowed).length;
+                const totalTest = allEnterprises.reduce((sum, e) => sum + (e.test_requests_count || 0), 0);
+                if (reqEl) reqEl.innerText = totalTest;
+
+                renderEnterprises();
+                populateRunnerDropdown();
+            } catch (err) {
+                console.error('Error loading enterprises:', err);
+            }
+        }
+
+        function filterEnterprises(status, btn) {
+            currentEntFilter = status;
+            document.querySelectorAll('#ent-status-filter .filter-pill').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderEnterprises();
+        }
+
+        function renderEnterprises() {
+            const container = document.getElementById('enterprises-list');
+            if (!container) return;
+
+            let list = allEnterprises;
+            if (currentEntFilter !== 'all') {
+                list = list.filter(e => e.status === currentEntFilter);
+            }
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div style="background:var(--bg-surface); padding:32px; border-radius:14px; text-align:center; color:var(--text-secondary); border:1px solid var(--border-subtle);">
+                        No enterprises found matching the <b>${currentEntFilter}</b> filter.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(ent => {
+                const isAuth = ent.status === 'authorized' && ent.production_allowed;
+                const statusPill = isAuth 
+                    ? `<span class="status-pill authorized">✅ Production Live</span>`
+                    : (ent.status === 'suspended'
+                        ? `<span class="status-pill suspended">🚫 Suspended</span>`
+                        : `<span class="status-pill pending">⏳ Pending Approval</span>`);
+
+                const planBadge = `<span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:6px; background:rgba(14,165,233,0.15); color:#38bdf8; border:1px solid rgba(14,165,233,0.3);">${ent.plan}</span>`;
+
+                return `
+                    <div class="enterprise-card" id="card-${ent.id}">
+                        <div class="enterprise-header">
+                            <div class="enterprise-title-group">
+                                <div class="enterprise-name">
+                                    <span>${escapeHtml(ent.name)}</span>
+                                    ${planBadge}
+                                    ${statusPill}
+                                </div>
+                                <div class="enterprise-sub">
+                                    <span>ID: <code>${ent.id}</code></span> • 
+                                    <span>Contact: <a href="mailto:${escapeHtml(ent.contact_email)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(ent.contact_email)}</a></span> • 
+                                    <span>Rate Limit: <b>${ent.rate_limit_per_minute} req/min</b></span>
+                                </div>
+                                ${ent.notes ? `<div style="font-size:0.78rem; color:#cbd5e1; margin-top:2px; font-style:italic;">"${escapeHtml(ent.notes)}"</div>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Credentials & Environment Grid -->
+                        <div class="env-boxes-grid">
+                            <!-- Sandbox (Test) Environment Box -->
+                            <div class="env-box">
+                                <div class="env-box-header">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="env-badge test">🧪 Sandbox / Test</span>
+                                        <span style="font-size:0.75rem; color:var(--text-secondary);">${ent.test_requests_count || 0} calls</span>
+                                    </div>
+                                    <span style="font-size:0.75rem; color:var(--success); font-weight:600;">Active</span>
+                                </div>
+                                <div class="key-row">
+                                    <span class="key-code" id="key-test-${ent.id}">${ent.test_api_key}</span>
+                                    <button class="btn-icon" onclick="copyText('${ent.test_api_key}', this)" title="Copy Test API Key">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                    </button>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem;" onclick="rotateKey('${ent.id}', 'test')">
+                                        🔄 Rotate Test Key
+                                    </button>
+                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem; color:#fbbf24; border-color:rgba(245,158,11,0.3);" onclick="openInTestRunner('${ent.id}', 'test')">
+                                        ⚡ Test Sandbox
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Live Production Environment Box -->
+                            <div class="env-box" style="${!isAuth ? 'opacity:0.85; border-color:rgba(245,158,11,0.3);' : 'border-color:rgba(16,185,129,0.3);'}">
+                                <div class="env-box-header">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="env-badge production">🚀 Live Production</span>
+                                        <span style="font-size:0.75rem; color:var(--text-secondary);">${ent.live_requests_count || 0} calls</span>
+                                    </div>
+                                    <span style="font-size:0.75rem; font-weight:600; color:${isAuth ? 'var(--success)' : 'var(--warning)'};">
+                                        ${isAuth ? 'Production Live' : 'Requires Authorization'}
+                                    </span>
+                                </div>
+                                <div class="key-row">
+                                    <span class="key-code" id="key-live-${ent.id}">${ent.live_api_key}</span>
+                                    <button class="btn-icon" onclick="copyText('${ent.live_api_key}', this)" title="Copy Live API Key">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                    </button>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem;" onclick="rotateKey('${ent.id}', 'production')">
+                                        🔄 Rotate Live Key
+                                    </button>
+                                    <button class="btn-ghost" style="padding:4px 8px; font-size:0.74rem; color:#34d399; border-color:rgba(16,185,129,0.3);" onclick="openInTestRunner('${ent.id}', 'production')">
+                                        ⚡ Test Production
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Actions Bar -->
+                        <div class="admin-actions-bar">
+                            <div style="font-size:0.76rem; color:var(--text-secondary);">
+                                ${ent.authorized_at ? `Authorized by <b>${escapeHtml(ent.authorized_by || 'admin')}</b> on ${new Date(ent.authorized_at).toLocaleDateString()}` : '⏳ Awaiting administrator production clearance'}
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                ${!isAuth ? `
+                                    <button class="btn-authorize" onclick="authorizeEnterprise('${ent.id}')">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                        <span>Authorize for Production</span>
+                                    </button>
+                                ` : `
+                                    <button class="btn-revoke" onclick="revokeEnterprise('${ent.id}')">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>
+                                        <span>Revoke Live Authorization</span>
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function populateRunnerDropdown() {
+            const select = document.getElementById('runner-enterprise-select');
+            if (!select) return;
+            select.innerHTML = allEnterprises.map(e => `
+                <option value="${e.id}">${e.name} (${e.plan.toUpperCase()} • ${e.status.toUpperCase()})</option>
+            `).join('');
+            onRunnerSelectChange();
+        }
+
+        function onRunnerSelectChange() {
+            const select = document.getElementById('runner-enterprise-select');
+            if (!select) return;
+            const ent = allEnterprises.find(e => e.id === select.value);
+            if (!ent) return;
+            const key = runnerEnv === 'test' ? ent.test_api_key : ent.live_api_key;
+            const previewEl = document.getElementById('runner-key-preview');
+            if (previewEl) {
+                previewEl.innerHTML = `
+                    Active Key: <code style="color:#38bdf8; font-family:monospace;">${key.slice(0, 16)}...${key.slice(-4)}</code>
+                    (${runnerEnv === 'test' ? '🧪 Sandbox' : (ent.production_allowed ? '🚀 Production' : '⚠️ Production [Unauthorized]')})
+                `;
+            }
+        }
+
+        function setRunnerEnv(env) {
+            runnerEnv = env;
+            const btnTest = document.getElementById('runner-btn-test');
+            const btnProd = document.getElementById('runner-btn-prod');
+            const badge = document.getElementById('runner-env-badge');
+
+            if (env === 'test') {
+                btnTest.style.background = 'rgba(245, 158, 11, 0.15)';
+                btnTest.style.color = '#fbbf24';
+                btnTest.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                btnProd.style.background = 'transparent';
+                btnProd.style.color = 'var(--text-secondary)';
+                btnProd.style.borderColor = 'var(--border-highlight)';
+                if (badge) {
+                    badge.innerText = 'TEST (SANDBOX)';
+                    badge.className = 'env-badge test';
+                }
+            } else {
+                btnProd.style.background = 'rgba(16, 185, 129, 0.15)';
+                btnProd.style.color = '#34d399';
+                btnProd.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                btnTest.style.background = 'transparent';
+                btnTest.style.color = 'var(--text-secondary)';
+                btnTest.style.borderColor = 'var(--border-highlight)';
+                if (badge) {
+                    badge.innerText = 'LIVE PRODUCTION';
+                    badge.className = 'env-badge production';
+                }
+            }
+            onRunnerSelectChange();
+        }
+
+        function openInTestRunner(enterpriseId, env) {
+            const select = document.getElementById('runner-enterprise-select');
+            if (select) {
+                select.value = enterpriseId;
+                setRunnerEnv(env);
+                select.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        async function runAdminDiagnosticQuery() {
+            const select = document.getElementById('runner-enterprise-select');
+            const qEl = document.getElementById('runner-question');
+            const out = document.getElementById('runner-response-container');
+            const btn = document.getElementById('runner-submit-btn');
+
+            const enterpriseId = select.value;
+            const question = qEl.value.trim();
+            if (!question) {
+                alert('Please enter a question for the diagnostic test.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<span>Simulating Request...</span>`;
+            out.style.display = 'block';
+            out.innerHTML = `
+                <div style="background:var(--bg-surface); padding:16px; border-radius:10px; border:1px solid var(--border-subtle); display:flex; align-items:center; gap:10px; font-size:0.85rem; color:var(--text-secondary);">
+                    <div class="status-dot"></div>
+                    Transmitting query through Sentinel Enterprise Gateway (${runnerEnv.toUpperCase()})...
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/v1/admin/test-query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        enterprise_id: enterpriseId,
+                        environment: runnerEnv,
+                        question: question,
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.status_code === 403 || !data.authorized) {
+                    out.innerHTML = `
+                        <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.4); border-radius:12px; padding:18px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:1.2rem;">🚫</span>
+                                    <span style="font-weight:700; color:#f87171; font-size:0.95rem;">HTTP 403 FORBIDDEN: Authorization Gate Enforcement</span>
+                                </div>
+                                <span class="status-pill pending">APPROVAL REQUIRED</span>
+                            </div>
+                            <p style="font-size:0.85rem; color:#fca5a5; line-height:1.5;">
+                                ${escapeHtml(data.message || data.error)}
+                            </p>
+                            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(239,68,68,0.2); display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-size:0.78rem; color:var(--text-secondary);">Client: <b>${escapeHtml(data.enterprise?.name || enterpriseId)}</b></span>
+                                <button class="btn-authorize" onclick="authorizeEnterprise('${enterpriseId}')">
+                                    ✅ Authorize This Enterprise for Production Now
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const score = data.meta?.groundedness_score;
+                    const scorePct = score !== null && score !== undefined ? `${Math.round(score * 100)}%` : 'N/A';
+
+                    out.innerHTML = `
+                        <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:14px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:1.1rem;">✅</span>
+                                    <span style="font-weight:700; color:#ffffff;">HTTP 200 OK — Grounded Answer Delivered</span>
+                                </div>
+                                <div style="display:flex; gap:6px;">
+                                    <span class="status-pill authorized">Grounded: ${scorePct}</span>
+                                    <span class="env-badge ${data.environment}">${data.environment.toUpperCase()}</span>
+                                </div>
+                            </div>
+
+                            <div style="background:var(--bg-card); padding:14px; border-radius:8px; border:1px solid var(--border-subtle); font-size:0.9rem; line-height:1.6; color:#f8fafc;">
+                                ${renderMarkdown(data.answer)}
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-secondary); border-top:1px solid var(--border-subtle); padding-top:10px;">
+                                <span>Latency: <b>${data.meta?.latency_ms}ms</b> • Model: <b>${data.meta?.model}</b></span>
+                                <span>Key Used: <code>${data.meta?.api_key_used}</code></span>
+                            </div>
+                        </div>
+                    `;
+                    loadEnterprises();
+                }
+            } catch (err) {
+                out.innerHTML = `
+                    <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:14px; color:#f87171; font-size:0.85rem;">
+                        Execution error: ${escapeHtml(err.message)}
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <span>Execute Diagnostic Call</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                `;
+            }
+        }
+
+        async function authorizeEnterprise(id) {
+            if (!confirm(`Authorize enterprise for Live Production traffic? This will allow live API calls with their production key.`)) return;
+            try {
+                const res = await fetch(`/v1/admin/enterprises/${id}/authorize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_user: 'admin@sentinel.internal', notes: 'Approved via Sentinel Admin Console' })
+                });
+                if (!res.ok) throw new Error('Authorization request failed');
+                await loadEnterprises();
+                alert('Enterprise has been successfully authorized for Live Production access!');
+            } catch (err) {
+                alert('Error authorizing enterprise: ' + err.message);
+            }
+        }
+
+        async function revokeEnterprise(id) {
+            if (!confirm(`Revoke live production authorization for this enterprise? Live queries will immediately be blocked with HTTP 403.`)) return;
+            try {
+                const res = await fetch(`/v1/admin/enterprises/${id}/revoke?reason=Revoked+by+administrator`, {
+                    method: 'POST'
+                });
+                if (!res.ok) throw new Error('Revoke request failed');
+                await loadEnterprises();
+                alert('Live production authorization revoked.');
+            } catch (err) {
+                alert('Error revoking enterprise: ' + err.message);
+            }
+        }
+
+        async function rotateKey(id, env) {
+            if (!confirm(`Are you sure you want to rotate the ${env.toUpperCase()} API key? Existing clients using the old key will need to update their configuration.`)) return;
+            try {
+                const res = await fetch(`/v1/admin/enterprises/${id}/keys/rotate?environment=${env}`, {
+                    method: 'POST'
+                });
+                if (!res.ok) throw new Error('Key rotation failed');
+                const data = await res.json();
+                await loadEnterprises();
+                alert(`New ${env.toUpperCase()} Key generated:\n${data.new_key}`);
+            } catch (err) {
+                alert('Error rotating key: ' + err.message);
+            }
+        }
+
+        function openOnboardModal() {
+            document.getElementById('onboard-modal').style.display = 'flex';
+        }
+
+        function closeOnboardModal() {
+            document.getElementById('onboard-modal').style.display = 'none';
+        }
+
+        async function submitOnboardEnterprise() {
+            const name = document.getElementById('onboard-name').value.trim();
+            const email = document.getElementById('onboard-email').value.trim();
+            const plan = document.getElementById('onboard-plan').value;
+            const rateLimit = parseInt(document.getElementById('onboard-ratelimit').value) || 300;
+            const notes = document.getElementById('onboard-notes').value.trim();
+
+            if (!name || !email) {
+                alert('Please enter both Enterprise Name and Contact Email.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/v1/admin/enterprises', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        contact_email: email,
+                        plan: plan,
+                        rate_limit_per_minute: rateLimit,
+                        notes: notes
+                    })
+                });
+                if (!res.ok) throw new Error('Failed to register enterprise');
+                closeOnboardModal();
+                await loadEnterprises();
+                alert(`Enterprise '${name}' successfully onboarded!\nSandbox key and Live key have been generated.`);
+            } catch (err) {
+                alert('Error creating enterprise: ' + err.message);
+            }
+        }
+
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#10b981"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+                setTimeout(() => { btn.innerHTML = orig; }, 1800);
+            }).catch(() => {
+                prompt('Copy API Key:', text);
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // Initial setup
+        updateSessionBadge();
         refreshHealthProbes();
+        if (window.location.pathname.includes('/admin') || window.location.hash.includes('admin')) {
+            switchTab('enterprise');
+        }
     </script>
 </body>
 </html>

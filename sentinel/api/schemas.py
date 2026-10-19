@@ -75,6 +75,30 @@ class ChatResponse(BaseModel):
         default_factory=list, description="List of retrieved source citations"
     )
     meta: ChatMetadata = Field(description="Execution metadata")
+    session_id: str | None = Field(
+        default=None, description="Active session ID for follow-up turns"
+    )
+
+
+class ChatMessage(BaseModel):
+    """A single message turn in a conversational session."""
+
+    role: str = Field(description="Message author role: user or assistant")
+    content: str = Field(description="Message text content")
+    timestamp: str | None = Field(default=None, description="ISO timestamp")
+    sources: list[SourceItem] = Field(
+        default_factory=list, description="Citations if assistant response"
+    )
+
+
+class SessionHistoryResponse(BaseModel):
+    """Response schema for GET /v1/chat/sessions/{session_id}."""
+
+    session_id: str = Field(description="Session thread ID")
+    messages: list[ChatMessage] = Field(
+        default_factory=list, description="List of messages in chronological order"
+    )
+    total_messages: int = Field(default=0, description="Total message count")
 
 
 class HealthResponse(BaseModel):

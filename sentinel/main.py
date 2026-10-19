@@ -12,6 +12,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from sentinel.agent.cache import ResponseCache
 from sentinel.agent.graph import create_agent_graph
+from sentinel.agent.memory import SessionManager
 from sentinel.agent.nodes import AgentNodeHandler
 from sentinel.agent.semantic_cache import SemanticCache
 from sentinel.api.middleware import RequestContextMiddleware
@@ -26,6 +27,7 @@ from sentinel.core.config import Settings, get_settings
 from sentinel.core.errors import SentinelError
 from sentinel.core.logging import get_logger, setup_logging
 from sentinel.core.telemetry import setup_telemetry, shutdown_telemetry
+from sentinel.core.tenancy import EnterpriseManager
 from sentinel.evals.feedback import FeedbackStore
 from sentinel.evals.gate import GroundednessGate
 from sentinel.guardrails.input import InputGuardrail
@@ -209,6 +211,19 @@ def build_app(
         # 9. User Feedback & RLHF Store (Phase 7)
         app.state.feedback_store = FeedbackStore(redis_url=current_settings.redis_url)
 
+        # 10. Multi-Turn Conversational Memory (Phase 8)
+        session_manager = SessionManager(
+            redis_url=current_settings.redis_url,
+            ttl_seconds=current_settings.session_history_ttl_seconds,
+            max_turns=current_settings.session_max_history_turns,
+            enabled=current_settings.session_memory_enabled,
+        )
+        app.state.session_manager = session_manager
+
+        # 11. Enterprise Commercialization & Tenancy Manager
+        enterprise_manager = EnterpriseManager(redis_url=current_settings.redis_url)
+        app.state.enterprise_manager = enterprise_manager
+
         yield
 
         # Graceful Shutdown
@@ -219,6 +234,7 @@ def build_app(
             await worker_task
         except asyncio.CancelledError:
             pass
+        await session_manager.close()
         await job_queue.close()
         await cache.close()
         await vector_store.close()

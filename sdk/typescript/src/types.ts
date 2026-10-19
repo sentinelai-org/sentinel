@@ -69,6 +69,20 @@ export interface ChatResponse {
   answer: string;
   sources: SourceItem[];
   meta: ChatMetadata;
+  session_id?: string | null;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string | null;
+  sources?: SourceItem[];
+}
+
+export interface SessionHistoryResponse {
+  session_id: string;
+  messages: ChatMessage[];
+  total_messages: number;
 }
 
 export type StreamChunk =

@@ -21,6 +21,7 @@ from sentinel_client.models import (
     IngestDocument,
     IngestJobResponse,
     IngestJobStatus,
+    SessionHistoryResponse,
 )
 
 
@@ -154,6 +155,18 @@ class SentinelClient:
         _handle_response_error(res)
         return FeedbackResponse.model_validate(res.json())
 
+    def get_session_history(self, session_id: str) -> SessionHistoryResponse:
+        """Retrieve chronological message turns for a conversation thread."""
+        res = self._client.get(f"/v1/chat/sessions/{session_id}")
+        _handle_response_error(res)
+        return SessionHistoryResponse.model_validate(res.json())
+
+    def clear_session(self, session_id: str) -> bool:
+        """Clear conversation history for a given session ID."""
+        res = self._client.delete(f"/v1/chat/sessions/{session_id}")
+        _handle_response_error(res)
+        return bool(res.json().get("success", True))
+
     def is_healthy(self) -> bool:
         """Returns True if the Sentinel service process is responding to liveness checks."""
         try:
@@ -274,6 +287,18 @@ class AsyncSentinelClient:
         res = await self._client.post("/v1/feedback", json=payload)
         _handle_response_error(res)
         return FeedbackResponse.model_validate(res.json())
+
+    async def get_session_history(self, session_id: str) -> SessionHistoryResponse:
+        """Retrieve chronological message turns for a conversation thread."""
+        res = await self._client.get(f"/v1/chat/sessions/{session_id}")
+        _handle_response_error(res)
+        return SessionHistoryResponse.model_validate(res.json())
+
+    async def clear_session(self, session_id: str) -> bool:
+        """Clear conversation history for a given session ID."""
+        res = await self._client.delete(f"/v1/chat/sessions/{session_id}")
+        _handle_response_error(res)
+        return bool(res.json().get("success", True))
 
     async def is_healthy(self) -> bool:
         """Returns True if the Sentinel service process is responding to liveness checks."""

@@ -67,6 +67,17 @@ class Settings(BaseSettings):
         default="sentinel_workers", description="Redis consumer group for background ingest workers"
     )
 
+    # Conversational Session Memory (Phase 8)
+    session_memory_enabled: bool = Field(
+        default=True, description="Enable multi-turn conversational session memory in Redis"
+    )
+    session_history_ttl_seconds: int = Field(
+        default=86400, description="TTL in seconds for session conversation history (default 24h)"
+    )
+    session_max_history_turns: int = Field(
+        default=6, description="Maximum previous conversation turns included in LLM context"
+    )
+
     # RAG, Hybrid Search & Re-ranking (RAG Precision)
     retrieval_top_k: int = Field(default=4, description="Number of top chunks to pass to LLM")
     score_threshold: float = Field(

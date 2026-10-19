@@ -21,6 +21,8 @@
   ],
   "scripts": {
     "build": "tsc",
+    "dev": "tsc -w",
+    "start": "node -e \"console.log('@sentinel-ai/client ready. Run npm test to run the SDK test suite.')\"",
     "test": "node --test",
     "prepublishOnly": "npm run build"
   },

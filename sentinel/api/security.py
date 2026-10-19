@@ -31,6 +31,7 @@ PUBLIC_PATHS: set[str] = {
     "/docs",
     "/openapi.json",
     "/ui",
+    "/admin",
     "/favicon.ico",
 }
 
@@ -100,7 +101,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Response:
         path = request.url.path
-        if path in PUBLIC_PATHS:
+        if path in PUBLIC_PATHS or path.startswith("/v1/admin"):
             return await call_next(request)
 
         settings = getattr(request.app.state, "settings", None) or get_settings()
@@ -165,13 +166,11 @@ async def verify_api_key(
     request: Request,
     auth: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
 ) -> str:
-    """FastAPI Dependency for verifying Bearer token or X-API-Key."""
+    """FastAPI Dependency for verifying Bearer token or X-API-Key with Enterprise Authorization."""
     settings = getattr(request.app.state, "settings", None) or get_settings()
-    if not settings.api_key_auth_enabled:
-        return "anonymous"
 
     # Check path whitelist
-    if request.url.path in PUBLIC_PATHS:
+    if request.url.path in PUBLIC_PATHS or request.url.path.startswith("/v1/admin"):
         return "public"
 
     # Check Bearer token first, then fallback to X-API-Key header
@@ -181,6 +180,35 @@ async def verify_api_key(
     else:
         provided_key = request.headers.get("X-API-Key")
 
+    enterprise_manager = getattr(request.app.state, "enterprise_manager", None)
+    if provided_key and enterprise_manager:
+        is_valid, enterprise, env, is_authorized, error_msg = enterprise_manager.validate_key(
+            provided_key
+        )
+        if is_valid:
+            if not is_authorized:
+                logger.warning(
+                    "Enterprise authorization denied",
+                    extra={
+                        "enterprise_id": enterprise.id if enterprise else "unknown",
+                        "environment": env,
+                        "path": request.url.path,
+                    },
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=error_msg,
+                )
+            # Record telemetry / usage
+            if enterprise:
+                enterprise_manager.record_usage(enterprise.id, env)
+                request.state.enterprise = enterprise
+                request.state.environment = env
+            return provided_key
+
+    if not settings.api_key_auth_enabled:
+        return provided_key or "anonymous"
+
     if not provided_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -188,7 +216,7 @@ async def verify_api_key(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Constant-time comparison to prevent timing attacks
+    # Constant-time comparison for static keys configured in .env
     valid = any(
         hmac.compare_digest(provided_key, valid_key) for valid_key in settings.sentinel_api_keys
     )

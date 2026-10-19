@@ -46,6 +46,9 @@ class ChatResponse(BaseModel):
     answer: str = Field(description="The verified generated answer")
     sources: list[SourceItem] = Field(default_factory=list, description="Citations used in answer")
     meta: ChatMetadata = Field(description="Execution and cost metadata")
+    session_id: str | None = Field(
+        default=None, description="Active conversation thread session ID"
+    )
 
 
 class IngestDocument(BaseModel):
@@ -86,3 +89,20 @@ class FeedbackResponse(BaseModel):
     status: str
     request_id: str
     feedback_id: str
+
+
+class ChatMessage(BaseModel):
+    """A message turn within a conversation thread."""
+
+    role: str
+    content: str
+    timestamp: str | None = None
+    sources: list[SourceItem] = Field(default_factory=list)
+
+
+class SessionHistoryResponse(BaseModel):
+    """Complete message history for a conversation thread."""
+
+    session_id: str
+    messages: list[ChatMessage] = Field(default_factory=list)
+    total_messages: int = 0

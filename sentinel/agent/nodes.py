@@ -105,13 +105,57 @@ class AgentNodeHandler:
             "meta": meta,
         }
 
+    async def contextualize_query(self, state: AgentState) -> dict[str, Any]:
+        """Contextualize follow-up questions with conversation history into a standalone search query."""
+        question = state["question"]
+        history_text = state.get("history_text", "")
+
+        if not history_text:
+            return {"standalone_query": question}
+
+        with tracer.start_as_current_span("agent.contextualize_query") as span:
+            span.set_attribute("agent.original_question", question)
+            try:
+                prompt = (
+                    f"Given the conversation history and a follow-up question, rephrase the question to be a standalone, "
+                    f"self-contained search query. Do NOT answer the question, only output the rephrased query.\n\n"
+                    f"Conversation History:\n{history_text}\n\n"
+                    f"Follow-up Question: {question}\n"
+                    f"Standalone Query:"
+                )
+                res = await self.llm_router.generate(
+                    prompt=prompt,
+                    system_instruction="You are a query reformulator. Rewrite the follow-up question to be a standalone search query based on the conversation history. Output ONLY the single rewritten query line, nothing else.",
+                )
+                standalone = res.text.strip().strip('"').strip("'")
+                if not standalone or len(standalone) < 3:
+                    standalone = question
+
+                span.set_attribute("agent.standalone_query", standalone)
+                logger.info(
+                    "Contextualized follow-up query",
+                    extra={"original": question, "standalone": standalone},
+                )
+                return {"standalone_query": standalone}
+            except Exception as exc:
+                logger.warning(
+                    "Query contextualization failed, falling back to original question",
+                    extra={"error": str(exc)},
+                )
+                return {"standalone_query": question}
+
     async def retrieve(self, state: AgentState) -> dict[str, Any]:
         """Retrieve relevant context chunks using Hybrid Search (BM25 + Dense RRF) and Cross-Encoder Re-ranking."""
         question = state["question"]
-        logger.info("Retrieving documents for question", extra={"question": question})
+        retrieval_query = state.get("standalone_query") or question
+        logger.info(
+            "Retrieving documents for question",
+            extra={"question": question, "retrieval_query": retrieval_query},
+        )
 
         with tracer.start_as_current_span("rag.retrieve") as span:
             span.set_attribute("rag.query", question)
+            span.set_attribute("rag.retrieval_query", retrieval_query)
             span.set_attribute("rag.top_k", self.top_k)
             span.set_attribute(
                 "rag.hybrid_enabled", self.hybrid_search_enabled and bool(self.bm25_index)
@@ -120,7 +164,7 @@ class AgentNodeHandler:
                 "rag.reranker_enabled", self.reranker_enabled and bool(self.reranker)
             )
 
-            query_vec = self.embedder.embed_text(question)
+            query_vec = self.embedder.embed_text(retrieval_query)
             retrieval_k = (
                 self.candidates_k
                 if (self.hybrid_search_enabled or self.reranker_enabled)
@@ -141,7 +185,7 @@ class AgentNodeHandler:
                 and len(self.bm25_index) > 0
             ):
                 sparse_docs = self.bm25_index.search(
-                    query=question,
+                    query=retrieval_query,
                     top_k=retrieval_k,
                 )
                 candidate_docs = reciprocal_rank_fusion(
@@ -160,7 +204,7 @@ class AgentNodeHandler:
             final_docs: list[ScoredDocument]
             if self.reranker_enabled and self.reranker is not None and candidate_docs:
                 final_docs = self.reranker.rerank(
-                    query=question,
+                    query=retrieval_query,
                     documents=candidate_docs,
                     top_n=self.top_k,
                 )
@@ -227,6 +271,7 @@ class AgentNodeHandler:
         """Generate answer using LLM router and verified context."""
         question = state["question"]
         documents = state.get("documents", [])
+        history_text = state.get("history_text", "")
 
         with tracer.start_as_current_span("agent.generate") as span:
             span.set_attribute("agent.context_chunks_count", len(documents))
@@ -235,10 +280,14 @@ class AgentNodeHandler:
                 f"[Source: {doc['source']} (Score: {doc['score']:.2f})]\n{doc['text']}"
                 for doc in documents
             )
+            history_section = (
+                f"Conversation History:\n{history_text}\n\n" if history_text else ""
+            )
             prompt = (
                 f"Context:\n{context_blocks}\n\n"
+                f"{history_section}"
                 f"Question: {question}\n\n"
-                f"Answer based only on the above context:"
+                f"Answer based on the above context and conversation history:"
             )
 
             cost_usd = 0.0

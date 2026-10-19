@@ -21,3 +21,6 @@ class AgentState(TypedDict, total=False):
     guardrail_passed: bool
     guardrail_violation: str | None
     cost_usd: float | None
+    chat_history: list[dict[str, Any]]
+    history_text: str
+    standalone_query: str

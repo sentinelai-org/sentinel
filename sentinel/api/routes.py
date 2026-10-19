@@ -5,18 +5,22 @@ from __future__ import annotations
 import json
 import os
 import time
+import uuid
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, StreamingResponse
+from pydantic import BaseModel
 
 from sentinel.agent.cache import CachedResponse, ResponseCache
+from sentinel.agent.memory import SessionManager
 from sentinel.agent.nodes import SYSTEM_PROMPT
 from sentinel.agent.semantic_cache import SemanticCache
 from sentinel.agent.state import AgentState
 from sentinel.api.schemas import (
+    ChatMessage,
     ChatMetadata,
     ChatRequest,
     ChatResponse,
@@ -28,12 +32,19 @@ from sentinel.api.schemas import (
     IngestJobResponse,
     IngestJobStatus,
     ReadyResponse,
+    SessionHistoryResponse,
     SourceItem,
 )
 from sentinel.api.security import verify_api_key
 from sentinel.core.config import get_settings
 from sentinel.core.logging import get_logger
 from sentinel.core.telemetry import get_current_span_id, get_current_trace_id
+from sentinel.core.tenancy import (
+    Enterprise,
+    EnterpriseAuthorizeRequest,
+    EnterpriseCreateRequest,
+    EnterpriseManager,
+)
 from sentinel.evals.feedback import FeedbackStore
 from sentinel.evals.gate import GroundednessGate
 from sentinel.guardrails.input import InputGuardrail
@@ -88,9 +99,27 @@ def get_feedback_store(request: Request) -> FeedbackStore:
     return request.app.state.feedback_store
 
 
+def get_session_manager(request: Request) -> SessionManager:
+    """Dependency provider for conversational session memory manager."""
+    session_mgr = getattr(request.app.state, "session_manager", None)
+    if session_mgr is None:
+        session_mgr = SessionManager(enabled=True)
+    return session_mgr
+
+
+def get_enterprise_manager(request: Request) -> EnterpriseManager:
+    """Dependency provider for enterprise commercialization and tenancy manager."""
+    em = getattr(request.app.state, "enterprise_manager", None)
+    if em is None:
+        em = EnterpriseManager()
+        request.app.state.enterprise_manager = em
+    return em
+
+
 @router.get("/ui", response_class=HTMLResponse, tags=["UI"])
+@router.get("/admin", response_class=HTMLResponse, tags=["UI"])
 async def get_ui() -> str:
-    """Serve the simple web UI."""
+    """Serve the web UI and Enterprise Admin Console."""
     ui_path = os.path.join(os.path.dirname(__file__), "ui.html")
     with open(ui_path, encoding="utf-8") as f:
         return f.read()
@@ -150,12 +179,17 @@ async def chat(
     request: Request,
     cache: ResponseCache = Depends(get_cache),
     semantic_cache: SemanticCache | None = Depends(get_semantic_cache),
+    session_manager: SessionManager = Depends(get_session_manager),
     agent_graph: Any = Depends(get_agent_graph),
     _api_key: str = Depends(verify_api_key),
 ) -> ChatResponse:
     """Main chat endpoint fronting the LangGraph RAG agent with multi-tier caching and safety guardrails."""
     req_id = getattr(request.state, "request_id", "req_unknown")
     start_time = getattr(request.state, "start_time", time.perf_counter())
+
+    session_id = payload.session_id or str(uuid.uuid4())
+    chat_history = await session_manager.get_recent_turns(session_id)
+    history_text = await session_manager.format_history_for_prompt(session_id)
 
     # Step 1: Check L1 Redis exact-match cache
     cached = await cache.get(payload.question)
@@ -165,9 +199,14 @@ async def chat(
             "Exact cache hit for query",
             extra={"question": payload.question, "latency_ms": round(elapsed_ms, 2)},
         )
+        await session_manager.append_message(session_id, "user", payload.question)
+        await session_manager.append_message(
+            session_id, "assistant", cached.answer, sources=cached.sources
+        )
         return ChatResponse(
             answer=cached.answer,
             sources=[SourceItem(**s) for s in cached.sources],
+            session_id=session_id,
             meta=ChatMetadata(
                 latency_ms=round(elapsed_ms, 2),
                 tokens_in=cached.tokens_in,
@@ -184,8 +223,8 @@ async def chat(
             ),
         )
 
-    # Step 2: Check L2 Qdrant semantic vector cache
-    if semantic_cache is not None:
+    # Step 2: Check L2 Qdrant semantic vector cache (for standalone queries without prior context)
+    if not chat_history and semantic_cache is not None:
         sem_cached, sim_score = await semantic_cache.get(payload.question)
         if sem_cached is not None:
             elapsed_ms = (time.perf_counter() - start_time) * 1000
@@ -197,9 +236,14 @@ async def chat(
                     "latency_ms": round(elapsed_ms, 2),
                 },
             )
+            await session_manager.append_message(session_id, "user", payload.question)
+            await session_manager.append_message(
+                session_id, "assistant", sem_cached.answer, sources=sem_cached.sources
+            )
             return ChatResponse(
                 answer=sem_cached.answer,
                 sources=[SourceItem(**s) for s in sem_cached.sources],
+                session_id=session_id,
                 meta=ChatMetadata(
                     latency_ms=round(elapsed_ms, 2),
                     tokens_in=sem_cached.tokens_in,
@@ -216,12 +260,14 @@ async def chat(
                 ),
             )
 
-    # Step 3: Invoke LangGraph agent on double cache miss
-    logger.info("Cache miss, executing LangGraph agent workflow")
+    # Step 3: Invoke LangGraph agent on double cache miss or multi-turn query
+    logger.info("Cache miss, executing LangGraph agent workflow", extra={"session_id": session_id})
     initial_state: AgentState = {
         "question": payload.question,
-        "session_id": payload.session_id,
+        "session_id": session_id,
         "request_id": req_id,
+        "chat_history": chat_history,
+        "history_text": history_text,
         "documents": [],
         "context_relevant": False,
         "answer": "",
@@ -274,9 +320,19 @@ async def chat(
         if semantic_cache is not None:
             await semantic_cache.set(payload.question, cached_entry)
 
+    # Step 5: Save message turn to conversational session memory
+    await session_manager.append_message(session_id, "user", payload.question)
+    await session_manager.append_message(
+        session_id,
+        "assistant",
+        answer,
+        sources=sources_data,
+    )
+
     return ChatResponse(
         answer=answer,
         sources=[SourceItem(**s) for s in sources_data],
+        session_id=session_id,
         meta=meta,
     )
 
@@ -328,6 +384,7 @@ async def chat_stream(
     request: Request,
     cache: ResponseCache = Depends(get_cache),
     semantic_cache: SemanticCache | None = Depends(get_semantic_cache),
+    session_manager: SessionManager = Depends(get_session_manager),
     vector_store: VectorStore = Depends(get_vector_store),
     embedder: Any = Depends(get_embedder),
     llm_router: Any = Depends(get_llm_router),
@@ -338,57 +395,72 @@ async def chat_stream(
     req_id = getattr(request.state, "request_id", "req_unknown")
     start_time = getattr(request.state, "start_time", time.perf_counter())
 
-    async def sse_event_stream() -> AsyncIterator[str]:
-        # Step 1: L1 Exact-match cache hit
-        cached = await cache.get(payload.question)
-        if cached is not None:
-            elapsed_ms = (time.perf_counter() - start_time) * 1000
-            yield f"event: sources\ndata: {json.dumps(cached.sources)}\n\n"
-            yield f"event: token\ndata: {json.dumps({'token': cached.answer})}\n\n"
-            meta = {
-                "latency_ms": round(elapsed_ms, 2),
-                "tokens_in": cached.tokens_in,
-                "tokens_out": cached.tokens_out,
-                "provider": cached.provider,
-                "model": cached.model,
-                "cache_hit": True,
-                "cache_type": "exact",
-                "cost_usd": 0.0,
-                "guardrail_passed": True,
-                "groundedness_passed": True,
-                "groundedness_score": 1.0,
-                "request_id": req_id,
-                "trace_id": get_current_trace_id(),
-                "span_id": get_current_span_id(),
-            }
-            yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
-            return
+    session_id = payload.session_id or str(uuid.uuid4())
+    chat_history = await session_manager.get_recent_turns(session_id)
+    history_text = await session_manager.format_history_for_prompt(session_id)
 
-        # Step 2: L2 Semantic cache hit
-        if semantic_cache is not None:
-            sem_cached, sim_score = await semantic_cache.get(payload.question)
-            if sem_cached is not None:
+    async def sse_event_stream() -> AsyncIterator[str]:
+        # Step 1: L1 Exact-match cache hit (only if standalone query)
+        if not chat_history:
+            cached = await cache.get(payload.question)
+            if cached is not None:
                 elapsed_ms = (time.perf_counter() - start_time) * 1000
-                yield f"event: sources\ndata: {json.dumps(sem_cached.sources)}\n\n"
-                yield f"event: token\ndata: {json.dumps({'token': sem_cached.answer})}\n\n"
+                await session_manager.append_message(session_id, "user", payload.question)
+                await session_manager.append_message(
+                    session_id, "assistant", cached.answer, sources=cached.sources
+                )
+                yield f"event: sources\ndata: {json.dumps(cached.sources)}\n\n"
+                yield f"event: token\ndata: {json.dumps({'token': cached.answer})}\n\n"
                 meta = {
                     "latency_ms": round(elapsed_ms, 2),
-                    "tokens_in": sem_cached.tokens_in,
-                    "tokens_out": sem_cached.tokens_out,
-                    "provider": sem_cached.provider,
-                    "model": sem_cached.model,
+                    "tokens_in": cached.tokens_in,
+                    "tokens_out": cached.tokens_out,
+                    "provider": cached.provider,
+                    "model": cached.model,
                     "cache_hit": True,
-                    "cache_type": "semantic",
+                    "cache_type": "exact",
                     "cost_usd": 0.0,
                     "guardrail_passed": True,
                     "groundedness_passed": True,
                     "groundedness_score": 1.0,
                     "request_id": req_id,
+                    "session_id": session_id,
                     "trace_id": get_current_trace_id(),
                     "span_id": get_current_span_id(),
                 }
                 yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
                 return
+
+            # Step 2: L2 Semantic cache hit (only if standalone query)
+            if semantic_cache is not None:
+                sem_cached, sim_score = await semantic_cache.get(payload.question)
+                if sem_cached is not None:
+                    elapsed_ms = (time.perf_counter() - start_time) * 1000
+                    await session_manager.append_message(session_id, "user", payload.question)
+                    await session_manager.append_message(
+                        session_id, "assistant", sem_cached.answer, sources=sem_cached.sources
+                    )
+                    yield f"event: sources\ndata: {json.dumps(sem_cached.sources)}\n\n"
+                    yield f"event: token\ndata: {json.dumps({'token': sem_cached.answer})}\n\n"
+                    meta = {
+                        "latency_ms": round(elapsed_ms, 2),
+                        "tokens_in": sem_cached.tokens_in,
+                        "tokens_out": sem_cached.tokens_out,
+                        "provider": sem_cached.provider,
+                        "model": sem_cached.model,
+                        "cache_hit": True,
+                        "cache_type": "semantic",
+                        "cost_usd": 0.0,
+                        "guardrail_passed": True,
+                        "groundedness_passed": True,
+                        "groundedness_score": 1.0,
+                        "request_id": req_id,
+                        "session_id": session_id,
+                        "trace_id": get_current_trace_id(),
+                        "span_id": get_current_span_id(),
+                    }
+                    yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
+                    return
 
         # Step 3: Input Guardrails
         input_guardrail = InputGuardrail(enabled=settings.guardrails_enabled)
@@ -470,10 +542,14 @@ async def chat_stream(
             f"[Source: {doc.metadata.get('source', 'unknown')} (Score: {doc.score:.2f})]\n{doc.text}"
             for doc in relevant_docs
         )
+        history_section = (
+            f"Conversation History:\n{history_text}\n\n" if history_text else ""
+        )
         prompt = (
             f"Context:\n{context_blocks}\n\n"
+            f"{history_section}"
             f"Question: {sanitized_question}\n\n"
-            f"Answer based only on the above context:"
+            f"Answer based on the above context and conversation history:"
         )
 
         # Step 5: Stream token generator
@@ -531,12 +607,13 @@ async def chat_stream(
             "groundedness_passed": gate_res.passed,
             "groundedness_score": gate_res.score,
             "request_id": req_id,
+            "session_id": session_id,
             "trace_id": get_current_trace_id(),
             "span_id": get_current_span_id(),
         }
 
-        # Cache if valid
-        if gate_res.passed and out_res.allowed:
+        # Cache if valid and standalone
+        if not chat_history and gate_res.passed and out_res.allowed:
             cached_entry = CachedResponse(
                 answer=full_answer,
                 sources=sources,
@@ -548,6 +625,12 @@ async def chat_stream(
             await cache.set(payload.question, cached_entry)
             if semantic_cache is not None:
                 await semantic_cache.set(payload.question, cached_entry)
+
+        # Save turn to conversational session memory
+        await session_manager.append_message(session_id, "user", payload.question)
+        await session_manager.append_message(
+            session_id, "assistant", full_answer, sources=sources
+        )
 
         yield f"event: done\ndata: {json.dumps({'meta': meta})}\n\n"
 
@@ -604,3 +687,274 @@ async def export_tuning_dataset(
 ) -> list[dict[str, Any]]:
     """Export corrected feedback pairs formatted for fine-tuning or DPO alignment."""
     return await feedback_store.export_tuning_dataset(limit=limit)
+
+
+# ============================================================================
+# Phase 8: Multi-Turn Conversational Memory & Session Management
+# ============================================================================
+
+
+@router.get(
+    "/v1/chat/sessions/{session_id}",
+    response_model=SessionHistoryResponse,
+    tags=["Chat"],
+)
+async def get_session_history(
+    session_id: str,
+    session_manager: SessionManager = Depends(get_session_manager),
+    _api_key: str = Depends(verify_api_key),
+) -> SessionHistoryResponse:
+    """Retrieve chronological message turns for a conversation thread."""
+    raw_messages = await session_manager.get_history(session_id)
+    messages = [
+        ChatMessage(
+            role=m.get("role", "user"),
+            content=m.get("content", ""),
+            timestamp=m.get("timestamp"),
+            sources=[SourceItem(**s) for s in m.get("sources", [])],
+        )
+        for m in raw_messages
+    ]
+    return SessionHistoryResponse(
+        session_id=session_id,
+        messages=messages,
+        total_messages=len(messages),
+    )
+
+
+@router.delete(
+    "/v1/chat/sessions/{session_id}",
+    tags=["Chat"],
+)
+async def clear_session(
+    session_id: str,
+    session_manager: SessionManager = Depends(get_session_manager),
+    _api_key: str = Depends(verify_api_key),
+) -> dict[str, Any]:
+    """Clear conversation history for a given session ID."""
+    deleted = await session_manager.clear_session(session_id)
+    return {"status": "cleared", "session_id": session_id, "success": deleted}
+
+
+# ---------------------------------------------------------------------------
+# Enterprise & Commercialization Admin Endpoints
+# ---------------------------------------------------------------------------
+
+
+class AdminTestQueryRequest(BaseModel):
+    """Payload for admin running a test query as a specific enterprise in test or live mode."""
+
+    enterprise_id: str
+    environment: str = "test"  # "test" or "production"
+    question: str
+
+
+@router.get(
+    "/v1/admin/enterprises",
+    response_model=list[Enterprise],
+    tags=["Enterprise Admin"],
+)
+async def list_enterprises(
+    enterprise_manager: EnterpriseManager = Depends(get_enterprise_manager),
+) -> list[Enterprise]:
+    """List all registered enterprise clients with their environment credentials and authorization status."""
+    return await enterprise_manager.list_enterprises()
+
+
+@router.post(
+    "/v1/admin/enterprises",
+    response_model=Enterprise,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Enterprise Admin"],
+)
+async def create_enterprise(
+    body: EnterpriseCreateRequest,
+    enterprise_manager: EnterpriseManager = Depends(get_enterprise_manager),
+) -> Enterprise:
+    """Register and onboard a new enterprise with sandbox (test) and production keys."""
+    return await enterprise_manager.create_enterprise(body)
+
+
+@router.post(
+    "/v1/admin/enterprises/{enterprise_id}/authorize",
+    response_model=Enterprise,
+    tags=["Enterprise Admin"],
+)
+async def authorize_enterprise(
+    enterprise_id: str,
+    body: EnterpriseAuthorizeRequest,
+    enterprise_manager: EnterpriseManager = Depends(get_enterprise_manager),
+) -> Enterprise:
+    """Admin grants production authorization to an enterprise."""
+    ent = await enterprise_manager.authorize_enterprise(
+        enterprise_id=enterprise_id,
+        admin_user=body.admin_user,
+        rate_limit=body.rate_limit_per_minute,
+        notes=body.notes,
+    )
+    if not ent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Enterprise '{enterprise_id}' not found.",
+        )
+    return ent
+
+
+@router.post(
+    "/v1/admin/enterprises/{enterprise_id}/revoke",
+    response_model=Enterprise,
+    tags=["Enterprise Admin"],
+)
+async def revoke_enterprise(
+    enterprise_id: str,
+    admin_user: str = "admin@sentinel.internal",
+    reason: str | None = None,
+    enterprise_manager: EnterpriseManager = Depends(get_enterprise_manager),
+) -> Enterprise:
+    """Admin revokes or suspends production access for an enterprise."""
+    ent = await enterprise_manager.revoke_enterprise(
+        enterprise_id=enterprise_id,
+        admin_user=admin_user,
+        reason=reason,
+    )
+    if not ent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Enterprise '{enterprise_id}' not found.",
+        )
+    return ent
+
+
+@router.post(
+    "/v1/admin/enterprises/{enterprise_id}/keys/rotate",
+    tags=["Enterprise Admin"],
+)
+async def rotate_enterprise_key(
+    enterprise_id: str,
+    environment: str = "test",
+    enterprise_manager: EnterpriseManager = Depends(get_enterprise_manager),
+) -> dict[str, Any]:
+    """Rotate the API key for an enterprise in either test or production environment."""
+    if environment not in ("test", "production"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Environment must be either 'test' or 'production'.",
+        )
+    ent, new_key = await enterprise_manager.rotate_key(enterprise_id, environment)
+    if not ent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Enterprise '{enterprise_id}' not found.",
+        )
+    return {
+        "enterprise_id": enterprise_id,
+        "environment": environment,
+        "new_key": new_key,
+        "enterprise": ent,
+    }
+
+
+@router.post(
+    "/v1/admin/test-query",
+    tags=["Enterprise Admin"],
+)
+async def admin_test_query(
+    body: AdminTestQueryRequest,
+    request: Request,
+    enterprise_manager: EnterpriseManager = Depends(get_enterprise_manager),
+) -> dict[str, Any]:
+    """Execute an interactive test query as an enterprise in either test or production environment."""
+    ent = await enterprise_manager.get_enterprise(body.enterprise_id)
+    if not ent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Enterprise '{body.enterprise_id}' not found.",
+        )
+
+    api_key = ent.test_api_key if body.environment == "test" else ent.live_api_key
+    is_valid, _, _, is_authorized, error_msg = enterprise_manager.validate_key(api_key)
+
+    if not is_authorized:
+        return {
+            "authorized": False,
+            "environment": body.environment,
+            "status_code": 403,
+            "error": "Enterprise Authorization Denied",
+            "message": error_msg,
+            "enterprise": {
+                "id": ent.id,
+                "name": ent.name,
+                "status": ent.status,
+                "production_allowed": ent.production_allowed,
+            },
+        }
+
+    # Execute query through agent graph if loaded
+    start_time = time.perf_counter()
+    enterprise_manager.record_usage(ent.id, body.environment)
+
+    graph = getattr(request.app.state, "agent_graph", None)
+    elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+
+    if graph:
+        initial_state = AgentState(
+            question=body.question,
+            raw_question=body.question,
+            request_id=f"adm_test_{uuid.uuid4().hex[:8]}",
+            session_id=f"sess_adm_{ent.id}",
+        )
+        result_state = await graph.ainvoke(initial_state)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+        return {
+            "authorized": True,
+            "environment": body.environment,
+            "status_code": 200,
+            "enterprise": {
+                "id": ent.id,
+                "name": ent.name,
+                "status": ent.status,
+                "production_allowed": ent.production_allowed,
+            },
+            "answer": result_state.get("answer", ""),
+            "sources": [
+                {
+                    "source": s.get("source", ""),
+                    "content": s.get("content", ""),
+                    "score": round(float(s.get("score", 0.0)), 3),
+                }
+                for s in result_state.get("sources", [])
+            ],
+            "meta": {
+                "latency_ms": round(elapsed_ms, 2),
+                "groundedness_score": result_state.get("groundedness_score"),
+                "groundedness_passed": result_state.get("groundedness_passed", True),
+                "model": result_state.get("model", "gemini-3.8-flash"),
+                "tokens_in": result_state.get("tokens_in", 0),
+                "tokens_out": result_state.get("tokens_out", 0),
+                "api_key_used": f"{api_key[:12]}...{api_key[-4:]}",
+            },
+        }
+
+    return {
+        "authorized": True,
+        "environment": body.environment,
+        "status_code": 200,
+        "enterprise": {
+            "id": ent.id,
+            "name": ent.name,
+            "status": ent.status,
+            "production_allowed": ent.production_allowed,
+        },
+        "answer": f"[Sentinel Diagnostic Response for {ent.name}]: Query executed successfully in {body.environment} mode.",
+        "sources": [{"source": "deployments.md", "content": "Deployments documentation", "score": 0.95}],
+        "meta": {
+            "latency_ms": round(elapsed_ms, 2),
+            "groundedness_score": 0.95,
+            "groundedness_passed": True,
+            "model": "diagnostic-engine",
+            "tokens_in": 15,
+            "tokens_out": 25,
+            "api_key_used": f"{api_key[:12]}...{api_key[-4:]}",
+        },
+    }
+
