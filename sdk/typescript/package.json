@@ -1,7 +1,16 @@
 {
   "name": "@lansar/sentinel-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Official TypeScript & Node.js client library for the Sentinel Enterprise AI & RAG Gateway",
+  "homepage": "https://github.com/sentinelai-org/sentinel#readme",
+  "bugs": {
+    "url": "https://github.com/sentinelai-org/sentinel/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sentinelai-org/sentinel.git",
+    "directory": "sdk/typescript"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -38,11 +47,6 @@
   ],
   "author": "Sentinel Team <engineering@sentinel.ai>",
   "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-org/sentinel.git",
-    "directory": "sdk/typescript"
-  },
   "peerDependencies": {
     "react": ">=18.0.0"
   },

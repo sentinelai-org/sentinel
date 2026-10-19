@@ -3,7 +3,8 @@
 Official TypeScript and Node.js client library for the **Sentinel Enterprise AI & RAG Gateway**.
 
 [![npm version](https://img.shields.io/npm/v/@lansar/sentinel-client.svg)](https://www.npmjs.com/package/@lansar/sentinel-client)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/your-org/sentinel/blob/main/LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-sentinelai--org%2Fsentinel-181717?logo=github)](https://github.com/sentinelai-org/sentinel)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/sentinelai-org/sentinel/blob/main/LICENSE)
 
 ---
 
