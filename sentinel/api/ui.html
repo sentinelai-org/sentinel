@@ -3,33 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentinel | Enterprise LLMOps & RAG Gateway</title>
+    <title>Sentinel | Enterprise AI Gateway & Playground</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            --bg-main: #0b0f19;
-            --bg-sidebar: #070a12;
-            --bg-card: #131b2e;
-            --bg-card-hover: #18223a;
-            --bg-input: #111827;
+            --bg-base: #070a13;
+            --bg-surface: #0e1526;
+            --bg-card: #141f38;
+            --bg-card-hover: #1b294b;
+            --bg-input: #0b1120;
             --border-subtle: #1e293b;
+            --border-glow: #38bdf833;
             --border-highlight: #334155;
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.25);
-            --accent-hover: #0ea5e9;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
+            --accent: #0ea5e9;
+            --accent-light: #38bdf8;
+            --accent-glow: rgba(14, 165, 233, 0.25);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
             --text-faint: #64748b;
-            --user-bubble: #1e3a8a;
-            --user-text: #ffffff;
-            --bot-bubble: #151f33;
             --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
             --warning: #f59e0b;
             --danger: #ef4444;
-            --radius-md: 12px;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --user-bubble: #0369a1;
+            --bot-bubble: #111c33;
+            --radius-sm: 8px;
+            --radius-md: 14px;
             --radius-lg: 20px;
         }
 
@@ -37,12 +40,12 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
+            background-color: var(--bg-base);
+            color: var(--text-primary);
             height: 100vh;
             width: 100vw;
             display: flex;
@@ -51,118 +54,176 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Top Navigation Header */
+        /* Top Navigation Bar */
         header {
             height: 64px;
             min-height: 64px;
+            background: rgba(14, 21, 38, 0.85);
+            backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-subtle);
-            background: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 24px;
-            z-index: 20;
+            z-index: 30;
         }
 
-        .brand-section {
+        .brand-container {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
-        .logo-emblem {
-            width: 34px;
-            height: 34px;
+        .brand-shield {
+            width: 36px;
+            height: 36px;
             background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 16px var(--accent-glow);
+            box-shadow: 0 0 20px var(--accent-glow);
         }
 
-        .logo-emblem svg {
-            width: 20px;
-            height: 20px;
+        .brand-shield svg {
+            width: 22px;
+            height: 22px;
             fill: #ffffff;
+        }
+
+        .brand-meta {
+            display: flex;
+            flex-direction: column;
         }
 
         .brand-title {
             font-size: 1.15rem;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 0.5px;
             background: linear-gradient(90deg, #ffffff, #94a3b8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .status-pill {
+        .brand-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-faint);
+            font-weight: 500;
+        }
+
+        /* Center Nav Tabs */
+        .nav-tabs {
+            display: flex;
+            align-items: center;
+            background: rgba(11, 17, 32, 0.7);
+            border: 1px solid var(--border-subtle);
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+        }
+
+        .nav-tab {
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 0.75rem;
-            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-tab.active {
+            color: #ffffff;
+            background: var(--accent);
+            box-shadow: 0 2px 10px var(--accent-glow);
+        }
+
+        .header-tools {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 9999px;
             background: rgba(16, 185, 129, 0.12);
             color: var(--success);
             border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 3px 10px;
-            border-radius: 9999px;
         }
 
         .status-dot {
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background-color: var(--success);
+            background: var(--success);
             box-shadow: 0 0 8px var(--success);
-            animation: pulse-dot 2s infinite ease-in-out;
+            animation: pulse-dot 2s infinite;
         }
 
         @keyframes pulse-dot {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.85); }
+            50% { opacity: 0.4; transform: scale(0.85); }
         }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .badge-model {
-            background: rgba(56, 189, 248, 0.1);
-            color: var(--accent);
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            font-size: 0.78rem;
-            font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-header {
+        .btn-ghost {
             background: transparent;
             border: 1px solid var(--border-highlight);
-            color: var(--text-muted);
+            color: var(--text-secondary);
             padding: 6px 12px;
             font-size: 0.8rem;
             font-weight: 500;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .btn-header:hover {
-            color: var(--text-main);
+        .btn-ghost:hover {
+            color: var(--text-primary);
             border-color: var(--accent);
             background: rgba(255, 255, 255, 0.04);
         }
 
-        /* Main Workspace */
-        main {
+        /* App Workspace Layout */
+        .app-workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* View Containers */
+        .tab-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .tab-view.active {
+            display: flex;
+        }
+
+        /* VIEW 1: PLAYGROUND & CHAT */
+        .playground-main {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -170,14 +231,13 @@
             position: relative;
         }
 
-        /* Chat Scroll Area */
         .chat-scroll-area {
             flex: 1;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 24px 20px 140px 20px;
+            padding: 24px 24px 160px 24px;
             scroll-behavior: smooth;
         }
 
@@ -186,96 +246,100 @@
             max-width: 860px;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 22px;
         }
 
-        /* Empty State / Welcome Hero */
+        /* Welcome Hero */
         .welcome-hero {
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            margin: 40px 0 20px 0;
+            margin: 40px auto 20px auto;
+            max-width: 680px;
             gap: 16px;
         }
 
         .welcome-avatar {
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             border-radius: 18px;
             background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 30px var(--accent-glow);
+            box-shadow: 0 0 32px var(--accent-glow);
         }
 
         .welcome-avatar svg {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             fill: #ffffff;
         }
 
         .welcome-title {
-            font-size: 1.6rem;
-            font-weight: 700;
+            font-size: 1.8rem;
+            font-weight: 800;
             color: #ffffff;
+            letter-spacing: -0.5px;
         }
 
         .welcome-sub {
             font-size: 0.95rem;
-            color: var(--text-muted);
-            max-width: 540px;
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
-        .suggestions-grid {
+        .prompt-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 14px;
         }
 
-        .suggestion-card {
+        .prompt-card {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             padding: 14px 16px;
             border-radius: 12px;
             cursor: pointer;
             text-align: left;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
 
-        .suggestion-card:hover {
+        .prompt-card:hover {
             border-color: var(--accent);
-            background: var(--bg-card-hover);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: var(--bg-card-hover);
         }
 
-        .suggestion-card h4 {
+        .prompt-card h4 {
             font-size: 0.88rem;
             font-weight: 600;
-            color: var(--text-main);
+            color: #ffffff;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .suggestion-card p {
+        .prompt-card p {
             font-size: 0.78rem;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            line-height: 1.4;
         }
 
-        /* Message Rows (ChatGPT / Gemini style) */
+        /* Message Bubbles */
         .message-row {
             display: flex;
-            gap: 16px;
+            gap: 14px;
             width: 100%;
-            animation: fadeIn 0.3s ease forwards;
+            animation: fadeIn 0.25s ease;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -290,15 +354,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-            font-size: 0.85rem;
             font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
         }
 
         .msg-avatar.bot {
-            background: linear-gradient(135deg, #0369a1, #0284c7);
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
             color: #ffffff;
-            box-shadow: 0 0 12px rgba(2, 132, 199, 0.3);
+            box-shadow: 0 0 14px var(--accent-glow);
         }
 
         .message-body {
@@ -308,78 +372,49 @@
             max-width: 85%;
         }
 
-        .message-row.user .message-body {
-            max-width: 75%;
-            align-items: flex-end;
-        }
-
         .message-bubble {
             padding: 14px 18px;
-            border-radius: var(--radius-lg);
-            line-height: 1.65;
-            font-size: 0.96rem;
-            word-break: break-word;
+            border-radius: var(--radius-md);
+            font-size: 0.94rem;
+            line-height: 1.6;
         }
 
         .message-row.user .message-bubble {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            background: var(--user-bubble);
             color: #ffffff;
             border-bottom-right-radius: 4px;
-            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
         }
 
         .message-row.bot .message-bubble {
             background: var(--bot-bubble);
-            color: var(--text-main);
             border: 1px solid var(--border-subtle);
-            border-top-left-radius: 4px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
         }
 
-        /* Formatted Content Typography */
-        .markdown-content p {
-            margin-bottom: 12px;
-        }
-        .markdown-content p:last-child {
-            margin-bottom: 0;
-        }
-        .markdown-content ul, .markdown-content ol {
-            margin: 8px 0 12px 22px;
-        }
-        .markdown-content li {
-            margin-bottom: 6px;
-        }
-        .markdown-content strong {
-            color: #ffffff;
-            font-weight: 600;
-        }
-        .markdown-content code {
-            font-family: 'JetBrains Mono', monospace;
-            background: rgba(15, 23, 42, 0.8);
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-size: 0.85em;
-            color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.2);
-        }
-        .markdown-content pre {
-            background: #090d16;
-            border: 1px solid var(--border-subtle);
+        .message-bubble pre {
+            background: #060913;
+            border: 1px solid #1e293b;
+            padding: 12px 14px;
             border-radius: 8px;
-            padding: 12px 16px;
-            margin: 10px 0;
             overflow-x: auto;
-        }
-        .markdown-content pre code {
-            background: transparent;
-            padding: 0;
-            border: none;
-            color: #cbd5e1;
+            margin: 10px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.84rem;
         }
 
-        /* Citations Box */
-        .citations-container {
-            background: rgba(15, 23, 42, 0.7);
+        .message-bubble code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #38bdf8;
+        }
+
+        /* Citations Accordion */
+        .citations-drawer {
+            background: rgba(14, 21, 38, 0.7);
             border: 1px solid var(--border-subtle);
             border-radius: 10px;
             padding: 10px 14px;
@@ -389,117 +424,122 @@
         .citations-header {
             font-size: 0.78rem;
             font-weight: 600;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 8px;
+            color: var(--accent-light);
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
         }
 
-        .citation-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+        .citations-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
         }
 
-        .citation-tag {
-            font-size: 0.76rem;
-            background: rgba(56, 189, 248, 0.08);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            color: #bae6fd;
-            padding: 3px 8px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .citation-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 0.75rem;
         }
 
-        .citation-tag .score {
-            color: var(--accent);
+        .citation-title {
             font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
         }
 
-        /* Metadata & Audit Bar */
+        .citation-score {
+            color: var(--accent-light);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            background: rgba(14, 165, 233, 0.15);
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .citation-snippet {
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        /* Metrics & Feedback Bar */
         .message-meta {
             display: flex;
+            align-items: center;
             flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.74rem;
-            color: var(--text-faint);
-            padding: 4px 6px 0 6px;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding: 2px 4px;
         }
 
-        .meta-pill {
+        .meta-tag {
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.73rem;
         }
 
-        .meta-pill strong {
-            color: var(--text-muted);
-        }
-
-        .grounded-badge {
-            padding: 2px 6px;
-            border-radius: 4px;
+        .badge-grounded {
+            padding: 2px 8px;
+            border-radius: 6px;
             font-weight: 600;
-        }
-        .grounded-badge.pass {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        .grounded-badge.fail {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.73rem;
         }
 
-        .feedback-actions {
-            margin-left: auto;
-            display: inline-flex;
+        .badge-grounded.pass {
+            background: var(--success-glow);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge-grounded.fail {
+            background: var(--danger-glow);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .feedback-btns {
+            display: flex;
             align-items: center;
             gap: 4px;
+            margin-left: auto;
         }
 
-        .btn-fb {
+        .btn-vote {
             background: transparent;
             border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
             border-radius: 6px;
             padding: 2px 6px;
             cursor: pointer;
-            font-size: 0.8rem;
-            color: var(--text-muted);
             transition: all 0.2s;
         }
 
-        .btn-fb:hover {
-            border-color: var(--accent);
-            background: rgba(255, 255, 255, 0.08);
+        .btn-vote:hover {
             color: #ffffff;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.05);
         }
 
-        /* Streaming Cursor */
-        .cursor {
-            display: inline-block;
-            width: 7px;
-            height: 17px;
-            background: var(--accent);
-            animation: pulse-cursor 0.9s infinite;
-            vertical-align: text-bottom;
-            margin-left: 3px;
-            border-radius: 2px;
-        }
-
-        @keyframes pulse-cursor {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        /* Floating Input Deck (ChatGPT / Gemini style) */
+        /* Floating Input Deck */
         .input-dock {
             position: absolute;
             bottom: 0;
@@ -508,9 +548,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px 20px 20px 20px;
-            background: linear-gradient(180deg, rgba(11, 15, 25, 0) 0%, rgba(11, 15, 25, 0.9) 35%, rgba(11, 15, 25, 1) 100%);
-            z-index: 10;
+            padding: 16px 24px 20px 24px;
+            background: linear-gradient(180deg, rgba(7, 10, 19, 0) 0%, rgba(7, 10, 19, 0.9) 30%, rgba(7, 10, 19, 1) 100%);
+            z-index: 20;
         }
 
         .input-dock-inner {
@@ -521,21 +561,21 @@
             gap: 10px;
         }
 
-        .input-box-wrapper {
-            background: var(--bg-card);
+        .input-card {
+            background: var(--bg-surface);
             border: 1px solid var(--border-highlight);
             border-radius: 18px;
             padding: 8px 12px 8px 16px;
             display: flex;
             align-items: flex-end;
             gap: 10px;
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
-            transition: all 0.25s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            transition: all 0.2s ease;
         }
 
-        .input-box-wrapper:focus-within {
+        .input-card:focus-within {
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent-glow), 0 12px 35px -5px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 0 2px var(--accent-glow), 0 12px 35px rgba(0, 0, 0, 0.7);
         }
 
         .chat-textarea {
@@ -543,8 +583,8 @@
             background: transparent;
             border: none;
             outline: none;
-            color: var(--text-main);
-            font-size: 0.98rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
             line-height: 1.5;
             resize: none;
             max-height: 180px;
@@ -556,7 +596,7 @@
             color: var(--text-faint);
         }
 
-        .send-button {
+        .btn-send {
             width: 38px;
             height: 38px;
             border-radius: 12px;
@@ -570,60 +610,421 @@
             flex-shrink: 0;
         }
 
-        .send-button:disabled {
+        .btn-send:disabled {
             background: var(--border-highlight);
             cursor: not-allowed;
             opacity: 0.5;
         }
 
-        .send-button:not(:disabled):hover {
-            background: var(--accent-hover);
+        .btn-send:not(:disabled):hover {
+            background: var(--accent-light);
             transform: scale(1.05);
         }
 
-        .send-button svg {
+        .btn-send svg {
             width: 18px;
             height: 18px;
-            fill: #0b0f19;
+            fill: #0b1120;
             transform: rotate(-45deg) translate(1px, -1px);
         }
 
-        /* Bottom Status & Info Bar */
-        .dock-footer {
+        .dock-status-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.76rem;
+            font-size: 0.75rem;
             color: var(--text-faint);
-            padding: 0 8px;
+            padding: 0 6px;
         }
 
-        .dock-footer-left {
+        /* Playground Side Control Panel */
+        .playground-sidebar {
+            width: 300px;
+            min-width: 300px;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-subtle);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-input, .control-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .control-input:focus, .control-select:focus {
+            border-color: var(--accent);
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding: 4px 0;
         }
 
         .toggle-switch {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            user-select: none;
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
         }
 
         .toggle-switch input {
-            cursor: pointer;
-            accent-color: var(--accent);
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
 
-        @media (max-width: 640px) {
-            header { padding: 0 16px; }
-            .badge-model { display: none; }
-            .chat-scroll-area { padding: 16px 12px 140px 12px; }
-            .message-bubble { padding: 12px 14px; font-size: 0.9rem; }
-            .welcome-title { font-size: 1.3rem; }
-            .suggestions-grid { grid-template-columns: 1fr; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-highlight);
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        /* VIEW 2: INGESTION STUDIO */
+        .dashboard-container {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .section-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .ingest-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 24px;
+        }
+
+        .card-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ingest-textarea {
+            width: 100%;
+            height: 220px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            outline: none;
+        }
+
+        .ingest-textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #ffffff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .job-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .job-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border-subtle);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .job-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #10b981);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* VIEW 3: ANALYTICS & FEEDBACK */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .kpi-label {
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .kpi-sub {
+            font-size: 0.74rem;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* VIEW 4: CLUSTER HEALTH */
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+        }
+
+        .health-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .health-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .health-card-name {
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .health-status-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .health-status-badge.healthy {
+            background: var(--success-glow);
+            color: var(--success);
+        }
+
+        .health-status-badge.unhealthy {
+            background: var(--danger-glow);
+            color: var(--danger);
+        }
+
+        /* Feedback Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-highlight);
+            border-radius: 18px;
+            padding: 24px;
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            height: 100px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            resize: none;
+            outline: none;
+        }
+
+        .modal-textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 6px;
+            height: 15px;
+            background: var(--accent);
+            margin-left: 3px;
+            vertical-align: middle;
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @media (max-width: 900px) {
+            .playground-sidebar { display: none; }
+            .ingest-grid { grid-template-columns: 1fr; }
+            .nav-tab span { display: none; }
         }
     </style>
 </head>
@@ -631,118 +1032,378 @@
 
     <!-- Header -->
     <header>
-        <div class="brand-section">
-            <div class="logo-emblem">
+        <div class="brand-container">
+            <div class="brand-shield">
                 <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 4c1.66 0 3 1.34 3 3 0 .78-.3 1.49-.79 2.02l2.49 2.49-1.41 1.41-2.49-2.49A3.003 3.003 0 0112 15c-1.66 0-3-1.34-3-3s1.34-3 3-3z"/></svg>
             </div>
-            <div class="brand-title">SENTINEL</div>
-            <div class="status-pill">
+            <div class="brand-meta">
+                <div class="brand-title">SENTINEL</div>
+                <div class="brand-subtitle">Enterprise AI Gateway & RAG Hub</div>
+            </div>
+        </div>
+
+        <!-- Center Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('playground')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                <span>Playground</span>
+            </button>
+            <button class="nav-tab" onclick="switchTab('ingestion')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                <span>Ingestion Studio</span>
+            </button>
+            <button class="nav-tab" onclick="switchTab('analytics')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                <span>Analytics & Feedback</span>
+            </button>
+            <button class="nav-tab" onclick="switchTab('health')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                <span>Cluster Health</span>
+            </button>
+        </nav>
+
+        <div class="header-tools">
+            <div class="status-badge" id="gateway-status">
                 <div class="status-dot"></div>
                 Gateway Online
             </div>
-        </div>
-
-        <div class="header-actions">
-            <div class="badge-model">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z"/></svg>
-                <span id="model-indicator">gemini-3.8-flash</span>
-            </div>
-            <button class="btn-header" onclick="clearChat()">Clear Chat</button>
-            <button class="btn-header" onclick="toggleLang()" id="lang-btn">FR</button>
+            <button class="btn-ghost" onclick="toggleSidebar()" title="Toggle Playground Controls">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                <span>Controls</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Chat Workspace -->
-    <main>
-        <div class="chat-scroll-area" id="scroll-area">
-            <div class="chat-container" id="chat-container">
+    <!-- Workspace -->
+    <div class="app-workspace">
 
-                <!-- Welcome State -->
-                <div class="welcome-hero" id="welcome-hero">
-                    <div class="welcome-avatar">
-                        <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
-                    </div>
-                    <div class="welcome-title" id="welcome-title">How can Sentinel assist you today?</div>
-                    <div class="welcome-sub" id="welcome-sub">
-                        Real-time RAG Agent connected to your Kubernetes cluster documentation, backed by Qdrant vector retrieval, Groundedness Gate verification, and Redis streaming cache.
-                    </div>
+        <!-- TAB 1: PLAYGROUND -->
+        <div class="tab-view active" id="view-playground">
+            <div class="playground-main">
+                <div class="chat-scroll-area" id="scroll-area">
+                    <div class="chat-container" id="chat-container">
 
-                    <div class="suggestions-grid">
-                        <div class="suggestion-card" onclick="usePrompt('What is a Kubernetes Pod and how does it share storage?')">
-                            <h4>📦 Kubernetes Pods</h4>
-                            <p>Storage, networking, and multi-container specs</p>
+                        <!-- Welcome Hero -->
+                        <div class="welcome-hero" id="welcome-hero">
+                            <div class="welcome-avatar">
+                                <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            </div>
+                            <div class="welcome-title">Sentinel Enterprise Gateway</div>
+                            <div class="welcome-sub">
+                                Test live hybrid RAG retrieval, factual Groundedness verification, and resilient LLM routing.
+                            </div>
+
+                            <div class="prompt-grid">
+                                <div class="prompt-card" onclick="usePrompt('How do Kubernetes Deployments handle rolling updates?')">
+                                    <h4>🔄 Rolling Updates</h4>
+                                    <p>maxSurge, maxUnavailable & zero-downtime rules</p>
+                                </div>
+                                <div class="prompt-card" onclick="usePrompt('Explain Kubernetes Pod storage and multi-container sharing.')">
+                                    <h4>📦 Pods & Volumes</h4>
+                                    <p>Volume mounts, emptyDir, and container isolation</p>
+                                </div>
+                                <div class="prompt-card" onclick="usePrompt('How do Services load balance traffic across Pod endpoints?')">
+                                    <h4>🌐 Cluster Services</h4>
+                                    <p>ClusterIP, kube-proxy iptables, and selectors</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="suggestion-card" onclick="usePrompt('Explain Kubernetes Deployment rolling update strategy and parameters.')">
-                            <h4>🔄 Deployment Strategies</h4>
-                            <p>maxSurge, maxUnavailable, zero downtime</p>
-                        </div>
-                        <div class="suggestion-card" onclick="usePrompt('How do Kubernetes Services route traffic to Pods?')">
-                            <h4>🌐 Cluster Networking</h4>
-                            <p>Selectors, kube-proxy, and DNS resolution</p>
-                        </div>
+
                     </div>
                 </div>
 
+                <!-- Floating Input Dock -->
+                <div class="input-dock">
+                    <div class="input-dock-inner">
+                        <div class="input-card">
+                            <textarea 
+                                id="chat-input" 
+                                class="chat-textarea" 
+                                rows="1" 
+                                placeholder="Ask a question to test the RAG Gateway..."
+                                oninput="autoResize(this)"
+                                onkeydown="handleKey(event)"
+                            ></textarea>
+                            <button class="btn-send" id="send-btn" onclick="submitQuery()" title="Send query">
+                                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                            </button>
+                        </div>
+
+                        <div class="dock-status-bar">
+                            <div>
+                                <span>SSE Streaming: <strong id="stream-status-text" style="color:var(--accent)">Active</strong></span>
+                                <span style="margin:0 8px">•</span>
+                                <span>Session: <code id="dock-session-tag">tenant_default</code></span>
+                            </div>
+                            <div>
+                                <span>Groundedness Gate >= 70% • Sub-5ms Exact Cache</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Floating Bottom Input Dock -->
-        <div class="input-dock">
-            <div class="input-dock-inner">
-                <div class="input-box-wrapper">
-                    <textarea 
-                        id="chat-input" 
-                        class="chat-textarea" 
-                        rows="1" 
-                        placeholder="Ask anything about your architecture or cluster..."
-                        oninput="autoResize(this)"
-                        onkeydown="handleKey(event)"
-                    ></textarea>
-                    <button class="send-button" id="send-btn" onclick="submitMessage()" title="Send message">
-                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+            <!-- Playground Controls Sidebar -->
+            <div class="playground-sidebar" id="playground-sidebar">
+                <div class="sidebar-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    Gateway Parameters
                 </div>
 
-                <div class="dock-footer">
-                    <div class="dock-footer-left">
+                <div class="control-group">
+                    <label class="control-label">Model Provider</label>
+                    <select class="control-select" id="ctrl-model">
+                        <option value="gemini-2.5-flash">Google Gemini 2.5 Flash (Primary)</option>
+                        <option value="qwen2.5:3b">Ollama Local (Fallback)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">API Key / Token</label>
+                    <input type="password" class="control-input" id="ctrl-api-key" placeholder="Bearer sk-live-...">
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Tenant Session ID</label>
+                    <input type="text" class="control-input" id="ctrl-session-id" value="tenant_acme_user_101">
+                </div>
+
+                <hr style="border:none; border-top:1px solid var(--border-subtle)">
+
+                <div class="control-group">
+                    <div class="toggle-row">
+                        <span>Live SSE Streaming</span>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="stream-toggle" checked>
-                            <span>Live SSE Streaming</span>
+                            <input type="checkbox" id="ctrl-stream-toggle" checked onchange="syncStreamToggle()">
+                            <span class="slider"></span>
                         </label>
-                        <span>•</span>
-                        <span>Worker Queue: <code style="color:var(--text-muted)">ingest_jobs</code></span>
                     </div>
-                    <div>
-                        <span>Sentinel LLMOps v0.5.0 • Groundedness Verified</span>
+
+                    <div class="toggle-row">
+                        <span>Groundedness Gate (70%)</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ctrl-gate-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <span>PII & Injection Guardrails</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ctrl-guard-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <span>2-Tier Caching</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ctrl-cache-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn-ghost" onclick="clearPlaygroundChat()" style="margin-top:auto;">
+                    Clear Chat History
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 2: INGESTION STUDIO -->
+        <div class="tab-view" id="view-ingestion">
+            <div class="dashboard-container">
+                <div class="section-header">
+                    <div class="section-title">Knowledge Ingestion Studio</div>
+                    <div class="section-desc">Submit documentation batches for background chunking, embedding, and indexing via Redis Streams.</div>
+                </div>
+
+                <div class="ingest-grid">
+                    <div class="card-panel">
+                        <div class="panel-heading">
+                            <span>Markdown Document Payload</span>
+                            <span style="font-size:0.78rem; color:var(--accent)">POST /v1/ingest/jobs</span>
+                        </div>
+                        <input type="text" class="control-input" id="ingest-source" placeholder="Source Path (e.g. runbooks/incident_failover.md)" value="docs/enterprise_guide.md">
+                        <textarea class="ingest-textarea" id="ingest-content" placeholder="Paste raw documentation, runbooks, or API guidelines in Markdown format..."># Incident Response Runbook
+When a Redis node fails, initiate cluster failover immediately using command: `redis-cli --cluster failover`.
+Ensure that client connection pools are updated to target replica nodes. Maximum allowed failover downtime is 30 seconds.</textarea>
+                        <button class="btn-primary" onclick="submitIngestJob()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            Submit Ingestion Batch
+                        </button>
+                    </div>
+
+                    <div class="card-panel">
+                        <div class="panel-heading">Active Ingestion Jobs</div>
+                        <div id="ingest-jobs-list" style="display:flex; flex-direction:column; gap:12px;">
+                            <div style="color:var(--text-faint); font-size:0.85rem; text-align:center; padding:24px 0;">
+                                No active ingestion jobs in this session.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+
+        <!-- TAB 3: ANALYTICS & FEEDBACK -->
+        <div class="tab-view" id="view-analytics">
+            <div class="dashboard-container">
+                <div class="section-header">
+                    <div class="section-title">Telemetry & Quality Analytics</div>
+                    <div class="section-desc">Real-time evaluation metrics, cache cost savings, and user satisfaction tracking.</div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Satisfaction Rate</div>
+                        <div class="kpi-value" id="kpi-satisfaction">91.4%</div>
+                        <div class="kpi-sub">▲ +4.2% this week</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Feedback</div>
+                        <div class="kpi-value" id="kpi-total-fb">142</div>
+                        <div class="kpi-sub" style="color:var(--text-secondary)">128 positive / 14 negative</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Avg Groundedness</div>
+                        <div class="kpi-value" id="kpi-groundedness">88.2%</div>
+                        <div class="kpi-sub">Gate pass rate: 98%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Cost Saved (Cache)</div>
+                        <div class="kpi-value" style="color:var(--success)">$42.80</div>
+                        <div class="kpi-sub">Sub-5ms cache hits</div>
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-heading">
+                        <span>Instruction Fine-Tuning Dataset Export</span>
+                        <button class="btn-ghost" onclick="exportFineTuningData()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            Export JSONL Dataset
+                        </button>
+                    </div>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">
+                        Sentinel automatically stores human ground-truth corrections submitted via <code>/v1/feedback</code>. You can export this curated dataset to fine-tune custom LLMs or align your models using DPO / RLHF.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: CLUSTER HEALTH -->
+        <div class="tab-view" id="view-health">
+            <div class="dashboard-container">
+                <div class="section-header">
+                    <div class="section-title">Cluster Infrastructure Health</div>
+                    <div class="section-desc">Real-time connectivity and status probes across Sentinel and its stateful dependencies.</div>
+                </div>
+
+                <div class="health-grid">
+                    <div class="health-card">
+                        <div class="health-card-header">
+                            <div class="health-card-name">
+                                <span>🛡️</span>
+                                <span>FastAPI Gateway</span>
+                            </div>
+                            <span class="health-status-badge healthy" id="health-gw">ONLINE</span>
+                        </div>
+                        <p style="font-size:0.8rem; color:var(--text-secondary);">Port 8000 • LangGraph State Machine & Guardrails</p>
+                    </div>
+
+                    <div class="health-card">
+                        <div class="health-card-header">
+                            <div class="health-card-name">
+                                <span>⚡</span>
+                                <span>Qdrant Vector DB</span>
+                            </div>
+                            <span class="health-status-badge healthy" id="health-qdrant">CONNECTED</span>
+                        </div>
+                        <p style="font-size:0.8rem; color:var(--text-secondary);">Collection: sentinel_docs • 384d Cosine Index</p>
+                    </div>
+
+                    <div class="health-card">
+                        <div class="health-card-header">
+                            <div class="health-card-name">
+                                <span>💾</span>
+                                <span>Redis Cache & Queue</span>
+                            </div>
+                            <span class="health-status-badge healthy" id="health-redis">CONNECTED</span>
+                        </div>
+                        <p style="font-size:0.8rem; color:var(--text-secondary);">Stream: ingest_jobs • SHA-256 Exact Cache</p>
+                    </div>
+
+                    <div class="health-card">
+                        <div class="health-card-header">
+                            <div class="health-card-name">
+                                <span>🔭</span>
+                                <span>OpenTelemetry (Jaeger)</span>
+                            </div>
+                            <a href="http://localhost:16686" target="_blank" class="health-status-badge healthy" style="text-decoration:none;">VIEW TRACES ↗</a>
+                        </div>
+                        <p style="font-size:0.8rem; color:var(--text-secondary);">OTLP Exporter • http://localhost:16686</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Ground-Truth Feedback Modal -->
+    <div class="modal-overlay" id="correction-modal">
+        <div class="modal-box">
+            <div class="modal-title">Submit Answer Correction</div>
+            <p style="font-size:0.82rem; color:var(--text-secondary);">
+                Help improve Sentinel's accuracy. Provide the correct resolution for this query:
+            </p>
+            <input type="hidden" id="modal-req-id">
+            <textarea class="modal-textarea" id="modal-correction-text" placeholder="Enter the verified, correct answer or clarification..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="closeCorrectionModal()">Cancel</button>
+                <button class="btn-primary" onclick="submitCorrection()">Save Correction</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let currentLang = 'en';
+        // Tab switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+
+            const tabBtn = Array.from(document.querySelectorAll('.nav-tab')).find(b => b.innerText.toLowerCase().includes(tabId));
+            if (tabBtn) tabBtn.classList.add('active');
+
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.classList.add('active');
+
+            if (tabId === 'analytics') refreshStats();
+            if (tabId === 'health') refreshHealthProbes();
+        }
+
+        function toggleSidebar() {
+            const sb = document.getElementById('playground-sidebar');
+            if (sb) {
+                sb.style.display = sb.style.display === 'none' ? 'flex' : 'none';
+            }
+        }
+
+        function syncStreamToggle() {
+            const checked = document.getElementById('ctrl-stream-toggle').checked;
+            document.getElementById('stream-status-text').innerText = checked ? 'Active' : 'Disabled';
+        }
 
         // Markdown renderer setup
         function renderMarkdown(text) {
             if (window.marked && typeof window.marked.parse === 'function') {
                 try {
                     return window.marked.parse(text);
-                } catch(e) {
-                    console.error('Marked parsing error:', e);
+                } catch (e) {
+                    console.error('Markdown parse error:', e);
                 }
             }
-            // Fallback lightweight parser
-            let safe = text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/`(.*?)`/g, '<code>$1</code>')
-                .replace(/\n\n/g, '<br><br>')
-                .replace(/\n/g, '<br>');
-            return safe;
+            return text.replace(/\n/g, '<br>');
         }
 
         function autoResize(el) {
@@ -754,7 +1415,7 @@
         function handleKey(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                submitMessage();
+                submitQuery();
             }
         }
 
@@ -762,50 +1423,30 @@
             const input = document.getElementById('chat-input');
             input.value = text;
             autoResize(input);
-            submitMessage();
+            submitQuery();
         }
 
-        function toggleLang() {
-            currentLang = currentLang === 'en' ? 'fr' : 'en';
-            document.getElementById('lang-btn').innerText = currentLang === 'en' ? 'FR' : 'EN';
-            const welcomeTitle = document.getElementById('welcome-title');
-            const welcomeSub = document.getElementById('welcome-sub');
-            const input = document.getElementById('chat-input');
-
-            if (currentLang === 'fr') {
-                if (welcomeTitle) welcomeTitle.innerText = "Comment Sentinel peut vous aider ?";
-                if (welcomeSub) welcomeSub.innerText = "Agent RAG temps réel connecté à votre documentation Kubernetes, avec recherche vectorielle Qdrant, porte de vérification Groundedness et cache Redis.";
-                input.placeholder = "Posez une question sur votre architecture ou cluster...";
-            } else {
-                if (welcomeTitle) welcomeTitle.innerText = "How can Sentinel assist you today?";
-                if (welcomeSub) welcomeSub.innerText = "Real-time RAG Agent connected to your Kubernetes cluster documentation, backed by Qdrant vector retrieval, Groundedness Gate verification, and Redis streaming cache.";
-                input.placeholder = "Ask anything about your architecture or cluster...";
-            }
-        }
-
-        function clearChat() {
+        function clearPlaygroundChat() {
             const container = document.getElementById('chat-container');
             container.innerHTML = `
                 <div class="welcome-hero" id="welcome-hero">
                     <div class="welcome-avatar">
                         <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
                     </div>
-                    <div class="welcome-title" id="welcome-title">How can Sentinel assist you today?</div>
-                    <div class="welcome-sub" id="welcome-sub">
-                        Real-time RAG Agent connected to your Kubernetes cluster documentation, backed by Qdrant vector retrieval, Groundedness Gate verification, and Redis streaming cache.
-                    </div>
-                    <div class="suggestions-grid">
-                        <div class="suggestion-card" onclick="usePrompt('What is a Kubernetes Pod and how does it share storage?')">
-                            <h4>📦 Kubernetes Pods</h4>
-                            <p>Storage, networking, and multi-container specs</p>
+                    <div class="welcome-title">Sentinel Enterprise Gateway</div>
+                    <div class="welcome-sub">Test live hybrid RAG retrieval, factual Groundedness verification, and resilient LLM routing.</div>
+                    <div class="prompt-grid">
+                        <div class="prompt-card" onclick="usePrompt('How do Kubernetes Deployments handle rolling updates?')">
+                            <h4>🔄 Rolling Updates</h4>
+                            <p>maxSurge, maxUnavailable & zero-downtime rules</p>
                         </div>
-                        <div class="suggestion-card" onclick="usePrompt('Explain Kubernetes Deployment rolling update strategy and parameters.')">
-                            <h4>🔄 Deployment Strategies</h4>
-                            <p>maxSurge, maxUnavailable, zero downtime</p>
+                        <div class="prompt-card" onclick="usePrompt('Explain Kubernetes Pod storage and multi-container sharing.')">
+                            <h4>📦 Pods & Volumes</h4>
+                            <p>Volume mounts, emptyDir, and container isolation</p>
                         </div>
-                        <div class="suggestion-card" onclick="usePrompt('How do Kubernetes Services route traffic to Pods?')">
-                            <h4>🌐 Cluster Networking</h4>
-                            <p>Selectors, kube-proxy, and DNS resolution</p>
+                        <div class="prompt-card" onclick="usePrompt('How do Services load balance traffic across Pod endpoints?')">
+                            <h4>🌐 Cluster Services</h4>
+                            <p>ClusterIP, kube-proxy iptables, and selectors</p>
                         </div>
                     </div>
                 </div>
@@ -817,19 +1458,20 @@
             scrollArea.scrollTop = scrollArea.scrollHeight;
         }
 
-        async function submitMessage() {
+        async function submitQuery() {
             const input = document.getElementById('chat-input');
             const question = input.value.trim();
             if (!question) return;
 
-            // Hide welcome hero if first message
             const hero = document.getElementById('welcome-hero');
             if (hero) hero.remove();
 
             const container = document.getElementById('chat-container');
-            const streamEnabled = document.getElementById('stream-toggle').checked;
+            const streamEnabled = document.getElementById('ctrl-stream-toggle').checked;
+            const sessionId = document.getElementById('ctrl-session-id').value || 'tenant_default';
+            const apiKey = document.getElementById('ctrl-api-key').value;
 
-            // 1. Append User Message
+            // Append user bubble
             const userRow = document.createElement('div');
             userRow.className = 'message-row user';
             userRow.innerHTML = `
@@ -839,12 +1481,11 @@
             `;
             container.appendChild(userRow);
 
-            // Clear input & reset height
             input.value = '';
             input.style.height = 'auto';
             document.getElementById('send-btn').disabled = true;
 
-            // 2. Append Bot Placeholder
+            // Append bot placeholder
             const botRow = document.createElement('div');
             botRow.className = 'message-row bot';
             botRow.innerHTML = `
@@ -864,23 +1505,26 @@
             const citationsEl = botRow.querySelector('.citations-container');
             const metaEl = botRow.querySelector('.message-meta');
 
+            const headers = { 'Content-Type': 'application/json' };
+            if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
             if (streamEnabled) {
-                await handleStream(question, contentEl, citationsEl, metaEl);
+                await executeStreamQuery(question, sessionId, headers, contentEl, citationsEl, metaEl);
             } else {
-                await handleRegular(question, contentEl, citationsEl, metaEl);
+                await executeRestQuery(question, sessionId, headers, contentEl, citationsEl, metaEl);
             }
         }
 
-        async function handleStream(question, contentEl, citationsEl, metaEl) {
+        async function executeStreamQuery(question, sessionId, headers, contentEl, citationsEl, metaEl) {
             try {
                 const response = await fetch('/v1/chat/stream', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question, session_id: 'ui-sse' })
+                    headers: headers,
+                    body: JSON.stringify({ question: question, session_id: sessionId })
                 });
 
                 if (!response.ok) {
-                    contentEl.innerHTML = `<span style="color:var(--danger)">Error: Received ${response.status} from gateway</span>`;
+                    contentEl.innerHTML = `<span style="color:var(--danger)">Error: HTTP ${response.status}</span>`;
                     return;
                 }
 
@@ -904,11 +1548,8 @@
                         let dataStr = '';
 
                         for (const line of lines) {
-                            if (line.startsWith('event: ')) {
-                                eventType = line.slice(7).trim();
-                            } else if (line.startsWith('data: ')) {
-                                dataStr = line.slice(6).trim();
-                            }
+                            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+                            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
                         }
 
                         if (eventType === 'token') {
@@ -916,51 +1557,10 @@
                             rawAccumulated += data.token;
                             contentEl.innerHTML = renderMarkdown(rawAccumulated) + '<span class="cursor"></span>';
                         } else if (eventType === 'sources') {
-                            const sources = JSON.parse(dataStr);
-                            if (sources && sources.length > 0) {
-                                citationsEl.style.display = 'block';
-                                citationsEl.innerHTML = `
-                                    <div class="citations-header">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                                        Retrieved Citations (${sources.length})
-                                    </div>
-                                    <div class="citation-tags">
-                                        ${sources.map(s => `
-                                            <div class="citation-tag">
-                                                <span>📄 ${s.source}</span>
-                                                <span class="score">${(s.score * 100).toFixed(0)}%</span>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                `;
-                            }
+                            renderCitations(JSON.parse(dataStr), citationsEl);
                         } else if (eventType === 'done') {
                             const doneData = JSON.parse(dataStr);
-                            const m = doneData.meta;
-                            // Remove cursor
-                            contentEl.innerHTML = renderMarkdown(rawAccumulated);
-
-                            // Format Groundedness badge
-                            const gScore = m.groundedness_score !== null ? (m.groundedness_score * 100).toFixed(0) + '%' : 'N/A';
-                            const gPass = m.groundedness_score !== null && m.groundedness_score >= 0.7;
-                            const gBadge = m.groundedness_score !== null 
-                                ? `<span class="grounded-badge ${gPass ? 'pass' : 'fail'}">Grounded: ${gScore}</span>`
-                                : `<span>Grounded: N/A</span>`;
-
-                            metaEl.style.display = 'flex';
-                            metaEl.innerHTML = `
-                                <span class="meta-pill">⚡ <strong>${m.latency_ms} ms</strong></span>
-                                <span>•</span>
-                                <span class="meta-pill">🤖 <strong>${m.model}</strong></span>
-                                <span>•</span>
-                                <span class="meta-pill">💾 <strong>${m.cache_hit ? m.cache_type : 'Cache Miss'}</strong></span>
-                                <span>•</span>
-                                ${gBadge}
-                                <div class="feedback-actions">
-                                    <button class="btn-fb" onclick="sendFeedback('${m.request_id}', 1, this)" title="Helpful answer">👍</button>
-                                    <button class="btn-fb" onclick="sendFeedback('${m.request_id}', -1, this)" title="Hallucination or unhelpful">👎</button>
-                                </div>
-                            `;
+                            renderMetadata(doneData.meta, metaEl);
                         } else if (eventType === 'error') {
                             const err = JSON.parse(dataStr);
                             contentEl.innerHTML = `<span style="color:var(--danger)">Stream error: ${err.error}</span>`;
@@ -968,66 +1568,27 @@
                     }
                     scrollToBottom();
                 }
-                // Final cleanup of cursor
                 contentEl.innerHTML = renderMarkdown(rawAccumulated);
             } catch (err) {
                 contentEl.innerHTML = `<span style="color:var(--danger)">Connection error: ${err.message}</span>`;
             }
         }
 
-        async function handleRegular(question, contentEl, citationsEl, metaEl) {
+        async function executeRestQuery(question, sessionId, headers, contentEl, citationsEl, metaEl) {
             try {
                 const response = await fetch('/v1/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question, session_id: 'ui-rest' })
+                    headers: headers,
+                    body: JSON.stringify({ question: question, session_id: sessionId })
                 });
 
                 const data = await response.json();
                 if (response.ok) {
                     contentEl.innerHTML = renderMarkdown(data.answer);
-
-                    if (data.sources && data.sources.length > 0) {
-                        citationsEl.style.display = 'block';
-                        citationsEl.innerHTML = `
-                            <div class="citations-header">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                                Retrieved Citations (${data.sources.length})
-                            </div>
-                            <div class="citation-tags">
-                                ${data.sources.map(s => `
-                                    <div class="citation-tag">
-                                        <span>📄 ${s.source}</span>
-                                        <span class="score">${(s.score * 100).toFixed(0)}%</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        `;
-                    }
-
-                    const m = data.meta;
-                    const gScore = m.groundedness_score !== null ? (m.groundedness_score * 100).toFixed(0) + '%' : 'N/A';
-                    const gPass = m.groundedness_score !== null && m.groundedness_score >= 0.7;
-                    const gBadge = m.groundedness_score !== null 
-                        ? `<span class="grounded-badge ${gPass ? 'pass' : 'fail'}">Grounded: ${gScore}</span>`
-                        : `<span>Grounded: N/A</span>`;
-
-                    metaEl.style.display = 'flex';
-                    metaEl.innerHTML = `
-                        <span class="meta-pill">⚡ <strong>${m.latency_ms} ms</strong></span>
-                        <span>•</span>
-                        <span class="meta-pill">🤖 <strong>${m.model}</strong></span>
-                        <span>•</span>
-                        <span class="meta-pill">💾 <strong>${m.cache_hit ? m.cache_type : 'Cache Miss'}</strong></span>
-                        <span>•</span>
-                        ${gBadge}
-                        <div class="feedback-actions">
-                            <button class="btn-fb" onclick="sendFeedback('${m.request_id}', 1, this)" title="Helpful answer">👍</button>
-                            <button class="btn-fb" onclick="sendFeedback('${m.request_id}', -1, this)" title="Hallucination or unhelpful">👎</button>
-                        </div>
-                    `;
+                    renderCitations(data.sources, citationsEl);
+                    renderMetadata(data.meta, metaEl);
                 } else {
-                    contentEl.innerHTML = `<span style="color:var(--danger)">Error: ${data.error || 'Server error'}</span>`;
+                    contentEl.innerHTML = `<span style="color:var(--danger)">Error: ${data.detail || data.error || 'Server error'}</span>`;
                 }
                 scrollToBottom();
             } catch (err) {
@@ -1035,24 +1596,235 @@
             }
         }
 
-        async function sendFeedback(requestId, rating, btn) {
-            if (!requestId) return;
+        function renderCitations(sources, el) {
+            if (!sources || sources.length === 0) return;
+            el.style.display = 'block';
+            el.innerHTML = `
+                <div class="citations-drawer">
+                    <div class="citations-header">
+                        <span>📄 Cited Knowledge Chunks (${sources.length})</span>
+                    </div>
+                    <div class="citations-cards">
+                        ${sources.map(s => `
+                            <div class="citation-card">
+                                <div class="citation-title">
+                                    <span>${s.source}</span>
+                                    <span class="citation-score">${(s.score * 100).toFixed(0)}%</span>
+                                </div>
+                                <div class="citation-snippet">${s.content}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMetadata(m, el) {
+            if (!m) return;
+            el.style.display = 'flex';
+            const gScore = m.groundedness_score !== null ? (m.groundedness_score * 100).toFixed(0) + '%' : 'N/A';
+            const gPass = m.groundedness_score !== null && m.groundedness_score >= 0.7;
+            const costStr = m.cost_usd ? `$${m.cost_usd.toFixed(6)}` : '$0.000000';
+
+            el.innerHTML = `
+                <span class="meta-tag">⚡ ${m.latency_ms}ms</span>
+                <span class="meta-tag">🤖 ${m.model}</span>
+                <span class="meta-tag">💾 ${m.cache_hit ? 'Hit (' + m.cache_type + ')' : 'Miss'}</span>
+                <span class="meta-tag">💰 ${costStr}</span>
+                <span class="badge-grounded ${gPass ? 'pass' : 'fail'}">Grounded: ${gScore}</span>
+                <div class="feedback-btns">
+                    <button class="btn-vote" onclick="voteFeedback('${m.request_id}', 1, this)">👍</button>
+                    <button class="btn-vote" onclick="openCorrectionModal('${m.request_id}')">👎</button>
+                </div>
+            `;
+        }
+
+        async function voteFeedback(reqId, rating, btn) {
             try {
                 const res = await fetch('/v1/feedback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ request_id: requestId, rating: rating })
+                    body: JSON.stringify({ request_id: reqId, rating: rating })
                 });
                 if (res.ok) {
-                    const parent = btn.parentElement;
-                    parent.innerHTML = rating > 0 
-                        ? '<span style="color:var(--success);font-size:0.75rem;font-weight:600;">Thanks! 👍</span>' 
-                        : '<span style="color:var(--warning);font-size:0.75rem;font-weight:600;">Feedback recorded 👎</span>';
+                    btn.parentElement.innerHTML = rating > 0 
+                        ? '<span style="color:var(--success);font-size:0.75rem;font-weight:600;">Saved 👍</span>' 
+                        : '<span style="color:var(--warning);font-size:0.75rem;font-weight:600;">Recorded 👎</span>';
                 }
             } catch (err) {
-                console.error('Feedback recording error:', err);
+                console.error('Feedback error:', err);
             }
         }
+
+        function openCorrectionModal(reqId) {
+            document.getElementById('modal-req-id').value = reqId;
+            document.getElementById('modal-correction-text').value = '';
+            document.getElementById('correction-modal').classList.add('open');
+        }
+
+        function closeCorrectionModal() {
+            document.getElementById('correction-modal').classList.remove('open');
+        }
+
+        async function submitCorrection() {
+            const reqId = document.getElementById('modal-req-id').value;
+            const correction = document.getElementById('modal-correction-text').value.trim();
+            if (!correction) return;
+
+            try {
+                const res = await fetch('/v1/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ request_id: reqId, rating: -1, correction: correction })
+                });
+                if (res.ok) {
+                    closeCorrectionModal();
+                    alert('Ground-truth correction recorded and added to the fine-tuning dataset!');
+                }
+            } catch (err) {
+                alert('Error submitting correction: ' + err.message);
+            }
+        }
+
+        // Ingestion Studio
+        async function submitIngestJob() {
+            const source = document.getElementById('ingest-source').value || 'api_upload.md';
+            const content = document.getElementById('ingest-content').value.trim();
+            if (!content) return;
+
+            try {
+                const res = await fetch('/v1/ingest/jobs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        documents: [{ content: content, source: source, metadata: { uploader: 'playground_ui' } }]
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    addJobCard(data.job_id);
+                } else {
+                    alert('Ingestion error: ' + (data.detail || data.error));
+                }
+            } catch (err) {
+                alert('Ingestion failure: ' + err.message);
+            }
+        }
+
+        function addJobCard(jobId) {
+            const list = document.getElementById('ingest-jobs-list');
+            if (list.querySelector('div[style*="text-align:center"]')) {
+                list.innerHTML = '';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'job-card';
+            card.id = `job-${jobId}`;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:600;">
+                    <span style="font-family:'JetBrains Mono';">${jobId.slice(0, 16)}...</span>
+                    <span id="status-${jobId}" style="color:var(--accent);">QUEUED</span>
+                </div>
+                <div class="job-progress-bar">
+                    <div class="job-progress-fill" id="fill-${jobId}" style="width: 15%;"></div>
+                </div>
+            `;
+            list.prepend(card);
+            pollJobStatus(jobId);
+        }
+
+        async function pollJobStatus(jobId) {
+            const pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/v1/ingest/jobs/${jobId}`);
+                    if (!res.ok) return;
+                    const job = await res.json();
+
+                    const statusEl = document.getElementById(`status-${jobId}`);
+                    const fillEl = document.getElementById(`fill-${jobId}`);
+
+                    if (statusEl) statusEl.innerText = job.status.toUpperCase();
+                    if (fillEl) fillEl.style.width = `${Math.max(job.progress_percent, 25)}%`;
+
+                    if (job.status === 'completed') {
+                        if (statusEl) {
+                            statusEl.innerText = 'COMPLETED';
+                            statusEl.style.color = 'var(--success)';
+                        }
+                        if (fillEl) fillEl.style.width = '100%';
+                        clearInterval(pollInterval);
+                    } else if (job.status === 'failed') {
+                        if (statusEl) {
+                            statusEl.innerText = 'FAILED';
+                            statusEl.style.color = 'var(--danger)';
+                        }
+                        clearInterval(pollInterval);
+                    }
+                } catch {
+                    clearInterval(pollInterval);
+                }
+            }, 1000);
+        }
+
+        // Analytics
+        async function refreshStats() {
+            try {
+                const res = await fetch('/v1/feedback/stats');
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('kpi-satisfaction').innerText = `${stats.satisfaction_rate}%`;
+                    document.getElementById('kpi-total-fb').innerText = stats.total_feedback;
+                }
+            } catch (err) {
+                console.error('Stats fetch error:', err);
+            }
+        }
+
+        async function exportFineTuningData() {
+            try {
+                const res = await fetch('/v1/feedback/export');
+                if (res.ok) {
+                    const data = await res.json();
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sentinel_fine_tuning_${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            } catch (err) {
+                alert('Export error: ' + err.message);
+            }
+        }
+
+        // Health Probes
+        async function refreshHealthProbes() {
+            try {
+                const readyRes = await fetch('/ready');
+                const readyData = await readyRes.json();
+                const qHealthy = readyData.components?.qdrant;
+                const rHealthy = readyData.components?.redis;
+
+                const qEl = document.getElementById('health-qdrant');
+                const rEl = document.getElementById('health-redis');
+
+                if (qEl) {
+                    qEl.innerText = qHealthy ? 'CONNECTED' : 'DISCONNECTED';
+                    qEl.className = `health-status-badge ${qHealthy ? 'healthy' : 'unhealthy'}`;
+                }
+                if (rEl) {
+                    rEl.innerText = rHealthy ? 'CONNECTED' : 'DISCONNECTED';
+                    rEl.className = `health-status-badge ${rHealthy ? 'healthy' : 'unhealthy'}`;
+                }
+            } catch (err) {
+                console.error('Probe error:', err);
+            }
+        }
+
+        // Initial setup
+        refreshHealthProbes();
     </script>
 </body>
 </html>

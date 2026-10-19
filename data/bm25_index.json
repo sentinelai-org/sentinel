@@ -151,7 +151,7 @@
         "source": "services.md",
         "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
         "title": "Kubernetes Services",
-        "size_bytes": 1302,
+        "size_bytes": 4849,
         "chunk_index": 0,
         "doc_id": "services"
       }
@@ -165,7 +165,7 @@
         "source": "services.md",
         "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
         "title": "Kubernetes Services",
-        "size_bytes": 1302,
+        "size_bytes": 4849,
         "chunk_index": 1,
         "doc_id": "services"
       }
@@ -179,8 +179,134 @@
         "source": "services.md",
         "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
         "title": "Kubernetes Services",
-        "size_bytes": 1302,
+        "size_bytes": 4849,
         "chunk_index": 2,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "b83387d772a02ad3ac57b5f0d83f1ca515dfef2374de1e2cfd2c2cef39d8c911",
+      "doc_id": "services",
+      "text": "How Services Load Balance Traffic Across Pod Endpoints\n\nKubernetes Services do not route traffic by themselves; instead, the cluster's networking layer and the **kube-proxy** daemon implement load balancing across backend Pod endpoints.",
+      "index": 3,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 3,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "f998a91885a2f0dbcf0123eff8965ed704d4d034091088f4b0c05830cfe1abac",
+      "doc_id": "services",
+      "text": "etworking layer and the **kube-proxy** daemon implement load balancing across backend Pod endpoints.\n### 1. Endpoints and EndpointSlices\nWhen a Service is created with a selector (e.g., `app: web`), the Kubernetes EndpointSlice controller continuously queries the API Server for Pods matching those labels.\n- The controller compiles the IP addresses and ports of healthy Pods into **EndpointSlice** resources.\n- If a Pod fails its readiness probe or terminates, its IP address is instantly removed from the active endpoints list to prevent traffic from being directed to an unhealthy Pod.",
+      "index": 4,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 4,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "b8f42c3eee50bdaa987f831c76eac937ad8b2871f411340c4e2fcd9c5e442511",
+      "doc_id": "services",
+      "text": "y removed from the active endpoints list to prevent traffic from being directed to an unhealthy Pod.\n### 2. The Role of kube-proxy\nThe **kube-proxy** component runs on every worker node in the Kubernetes cluster. It watches the Kubernetes API server for additions, updates, and removals of Service and EndpointSlice objects. Whenever endpoints change, `kube-proxy` dynamically configures the host node's Linux kernel networking rules to route traffic directed to the Service's virtual IP (ClusterIP) directly to the target Pod endpoint IPs.",
+      "index": 5,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 5,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "ce72f7ea6ba75e65693953982b89d4b240114bb37211a8f6cd0cba4610004194",
+      "doc_id": "services",
+      "text": "3. Load Balancing Proxy Modes\n\n`kube-proxy` operates in different proxy modes to perform this traffic distribution:",
+      "index": 6,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 6,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "ed74b9c30e3fe1877fe767678806737efddfcf4ce260859aceb42b3138f95cb8",
+      "doc_id": "services",
+      "text": "#### iptables Mode (Default)\nIn `iptables` mode, `kube-proxy` installs Netfilter packet filtering and NAT rules directly in the node's kernel:\n- **Random Probability Load Balancing**: iptables does not use an active software balancer process. Instead, it uses the `statistic` module in iptables to select backend Pod endpoints with equal probability (e.g., probability of $1/n$ for the first endpoint, $1/(n-1)$ for the second, etc.).\n- **Zero Userspace Latency**: Packets flow directly through the Linux kernel without context-switching to a userspace proxy process.",
+      "index": 7,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 7,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "6341fe0b38c0cd4a46df2cca11e4bdda9398098b41269162a96520c72c83d7af",
+      "doc_id": "services",
+      "text": "ckets flow directly through the Linux kernel without context-switching to a userspace proxy process.\n- **Failover**: If a selected Pod does not respond, connection retries depend on the client application unless the endpoint is decommissioned.",
+      "index": 8,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 8,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "7889bafab85fd6efa4c7ee8b435eb8a41f91714d78e72512e0b819c8d0e9a614",
+      "doc_id": "services",
+      "text": "#### IPVS Mode (High Performance & Scale)\nFor large clusters with tens of thousands of Services, `kube-proxy` uses **IPVS (IP Virtual Server)**:\n- **Kernel-level Hash Tables**: IPVS is built into the Linux kernel and uses hash tables with $O(1)$ complexity, avoiding the performance degradation that can occur with huge iptables chain rule sets ($O(n)$ traversal).\n- **Load Balancing Algorithms**: IPVS supports advanced scheduling algorithms:\n  - `rr` (Round-Robin)\n  - `lc` (Least Connection)\n  - `dh` (Destination Hashing)\n  - `sh` (Source Hashing)\n  - `sed` (Shortest Expected Delay)",
+      "index": 9,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 9,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "147e79709edcb572d158c1e0ad8a46bb34e8c4832cd057173ed425a01b29b725",
+      "doc_id": "services",
+      "text": "ection)\n  - `dh` (Destination Hashing)\n  - `sh` (Source Hashing)\n  - `sed` (Shortest Expected Delay)\n- **Active Health Checks**: IPVS can automatically redirect traffic if a backend fails.\n\n#### Userspace Mode (Legacy)\nIn this legacy mode, `kube-proxy` opens a port on the local node and forwards incoming connections to backend Pod endpoints using round-robin in user space. Because every packet must switch back and forth between kernel space and user space, this mode incurs significant latency overhead and is rarely used in modern deployments.",
+      "index": 10,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 10,
+        "doc_id": "services"
+      }
+    },
+    {
+      "chunk_id": "270c2104ed38026e9306b57ae25c6589ee6a46016d07ea6b0e33da31d436262b",
+      "doc_id": "services",
+      "text": "user space, this mode incurs significant latency overhead and is rarely used in modern deployments.\n### 4. Session Affinity (Sticky Sessions)\nBy default, Kubernetes distributes requests across endpoints randomly or via round-robin. To route requests from a specific client to the same Pod each time, you can enable sticky sessions using:\n```yaml\nspec:\n  sessionAffinity: ClientIP\n  sessionAffinityConfig:\n    clientIP:\n      timeoutSeconds: 10800\n```\nThis ensures that all connections originating from the same client IP address are consistently routed to the same backend Pod until the timeout expires.",
+      "index": 11,
+      "metadata": {
+        "source": "services.md",
+        "path": "C:\\projects\\sentinel\\data\\docs\\services.md",
+        "title": "Kubernetes Services",
+        "size_bytes": 4849,
+        "chunk_index": 11,
         "doc_id": "services"
       }
     }

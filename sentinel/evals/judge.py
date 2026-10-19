@@ -51,7 +51,16 @@ class HeuristicJudge(BaseJudge):
         relevance = calculate_answer_relevance(sample.question, generated_answer)
 
         # Check refusal for unanswerable queries
-        refusal_phrases = ["could not find sufficient", "not covered", "unknown", "refusal"]
+        refusal_phrases = [
+            "could not find sufficient",
+            "not covered",
+            "unknown",
+            "refusal",
+            "not enough information",
+            "insufficient information",
+            "context does not contain",
+            "context does not provide",
+        ]
         is_refusal = any(p in generated_answer.lower() for p in refusal_phrases)
 
         correctly_refused: bool | None = None

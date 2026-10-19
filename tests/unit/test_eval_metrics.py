@@ -38,6 +38,14 @@ def test_groundedness_refusal_is_inherently_grounded() -> None:
     assert score == 1.0
 
 
+def test_groundedness_not_enough_information_refusal() -> None:
+    """Meta-refusals stating lack of information in context are scored as 1.0 grounded."""
+    contexts = ["Some basic documentation without details."]
+    answer = "Based on the provided context, there is not enough information to explain the specific mechanism."
+    score = calculate_groundedness(answer, contexts)
+    assert score == 1.0
+
+
 def test_context_recall_calculation() -> None:
     """Context recall measures ratio of expected source files present in retrieval."""
     expected = ["pods.md", "deployments.md"]
