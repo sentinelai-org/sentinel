@@ -1,4 +1,35 @@
-# Python
+# ==============================================================================
+# Sentinel - Enterprise .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment Variables, Secrets & Credentials
+# ------------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+.env.staging
+!.env.example
+
+# Certificates & Private Keys
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.csr
+credentials.json
+secrets.json
+service-account*.json
+token.json
+
+# ------------------------------------------------------------------------------
+# 2. Python & Packaging
+# ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -22,36 +53,89 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
+# Virtual Environments
 .venv/
 venv/
 ENV/
 env/
+.direnv/
 
-# Environment and secrets
-.env
-.env.local
-.env.*.local
-*.pem
-*.key
-
-# Testing and coverage
+# Testing & Quality Tools
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+.tox/
+.nox/
+pip-wheel-metadata/
+nosetests.xml
+coverage.xml
 
-# IDEs
-.vscode/
-.idea/
+# ------------------------------------------------------------------------------
+# 3. Node.js & TypeScript SDK
+# ------------------------------------------------------------------------------
+node_modules/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+*.tsbuildinfo
+sdk/typescript/dist/
+
+# Mintlify & Documentation builds
+.mintlify/
+.next/
+out/
+
+# ------------------------------------------------------------------------------
+# 4. Local Datastores, Caches & Runtime Dumps
+# ------------------------------------------------------------------------------
+data/qdrant_storage/
+data/redis_data/
+dump.rdb
+*.rdb
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+data/exports/
+data/evals/results/
+
+# Logs & Temporary files
+logs/
+*.log
+*.tmp
+*.temp
+*.bak
 *.swp
 *.swo
 
-# Docker / local data
-data/qdrant_storage/
-data/redis_data/
+# ------------------------------------------------------------------------------
+# 5. IDEs & Operating System Artifacts
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 
-# Dependencies
-node_modules/
-.mintlify/
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.cursor/
+.gemini/
+scratch/
